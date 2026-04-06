@@ -127,26 +127,55 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
   }
 }
 
+// Common city coordinates for fallback when geocoding fails
+const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  // Australian cities
+  'sydney': { lat: -33.8688, lng: 151.2093 },
+  'melbourne': { lat: -37.8136, lng: 144.9631 },
+  'brisbane': { lat: -27.4698, lng: 153.0251 },
+  'perth': { lat: -31.9505, lng: 115.8605 },
+  'adelaide': { lat: -34.9285, lng: 138.6007 },
+  'canberra': { lat: -35.2809, lng: 149.1300 },
+  // Major world cities
+  'london': { lat: 51.5074, lng: -0.1278 },
+  'new york': { lat: 40.7128, lng: -74.0060 },
+  'los angeles': { lat: 34.0522, lng: -118.2437 },
+  'tokyo': { lat: 35.6762, lng: 139.6503 },
+  'paris': { lat: 48.8566, lng: 2.3522 },
+};
+
 /**
  * Get coordinates from location string
- * Supports: "lat,lng" format or city name (uses geocoding)
+ * Supports: "lat,lng" format, city name lookup, or geocoding
  */
 async function getCoordinates(location: string): Promise<{ lat: number; lng: number } | null> {
-  console.log('🌍 Geocoding location:', location);
+  console.log('🌍 Getting coordinates for:', location);
   
   // Check if already in lat,lng format
   if (location.includes(',')) {
-    const [lat, lng] = location.split(',').map(s => parseFloat(s.trim()));
-    if (!isNaN(lat) && !isNaN(lng)) {
-      console.log('✓ Using provided coordinates:', { lat, lng });
-      return { lat, lng };
+    const parts = location.split(',');
+    if (parts.length === 2) {
+      const [lat, lng] = parts.map(s => parseFloat(s.trim()));
+      if (!isNaN(lat) && !isNaN(lng)) {
+        console.log('✓ Using provided coordinates:', { lat, lng });
+        return { lat, lng };
+      }
     }
   }
 
-  // Try to geocode city name using free Nominatim API
+  // Check common cities database first
+  const locationLower = location.toLowerCase().trim();
+  for (const [city, coords] of Object.entries(CITY_COORDINATES)) {
+    if (locationLower.includes(city)) {
+      console.log('✓ Found in city database:', city, coords);
+      return coords;
+    }
+  }
+
+  // Try to geocode city name using free Nominatim API (may fail due to CORS in browser)
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`;
-    console.log('🔍 Geocoding request:', url);
+    console.log('🔍 Trying geocoding API:', url);
     
     const response = await fetch(url, {
       headers: {
@@ -155,22 +184,21 @@ async function getCoordinates(location: string): Promise<{ lat: number; lng: num
     });
     const data = await response.json();
     
-    console.log('📍 Geocoding response:', data);
-    
     if (data && data.length > 0) {
       const coords = {
         lat: parseFloat(data[0].lat),
         lng: parseFloat(data[0].lon),
       };
-      console.log('✓ Found coordinates:', coords, 'for:', data[0].display_name);
+      console.log('✓ Geocoded coordinates:', coords, 'for:', data[0].display_name);
       return coords;
-    } else {
-      console.log('❌ No coordinates found for location:', location);
     }
   } catch (error) {
-    console.error('❌ Geocoding error:', error);
+    console.log('⚠️ Geocoding API unavailable (CORS or network issue)');
   }
 
+  console.log('❌ Could not find coordinates for:', location);
+  console.log('💡 Supported cities:', Object.keys(CITY_COORDINATES).join(', '));
+  console.log('💡 Or enter as: "latitude,longitude" (e.g. "-37.8136,144.9631")');
   return null;
 }
 
