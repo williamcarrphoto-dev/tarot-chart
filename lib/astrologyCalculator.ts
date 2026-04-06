@@ -24,26 +24,33 @@ function calculateMoonPosition(date: Date): number {
 
 // Calculate ascendant (rising sign) using accurate astronomy library
 function calculateAscendant(date: Date, lat: number, lng: number): number {
-  // Create observer location
-  const observer = new Astronomy.Observer(lat, lng, 0);
+  // Calculate Greenwich Sidereal Time
+  const gst = Astronomy.SiderealTime(date);
   
-  // Calculate local sidereal time
-  const hourAngle = Astronomy.SiderealTime(date);
+  // Convert to Local Sidereal Time (in hours)
+  const lst = gst + (lng / 15.0);
+  
+  // Convert LST to degrees
+  const lstDegrees = (lst * 15.0) % 360;
   
   // Get obliquity of ecliptic
-  const obliquity = 23.439291 - 0.0130042 * ((Astronomy.MakeTime(date).tt - 2451545.0) / 36525);
+  const astroTime = Astronomy.MakeTime(date);
+  const T = (astroTime.tt - 2451545.0) / 36525;
+  const obliquity = 23.439291 - 0.0130042 * T;
   const obliquityRad = obliquity * Math.PI / 180;
   
-  // Local sidereal time in degrees
-  const lst = (hourAngle * 15 + lng) % 360;
-  const lstRad = lst * Math.PI / 180;
+  // Convert to radians
+  const lstRad = lstDegrees * Math.PI / 180;
   const latRad = lat * Math.PI / 180;
   
-  // Calculate ascendant using standard formula
-  const y = -Math.cos(lstRad);
-  const x = Math.sin(lstRad) * Math.cos(obliquityRad) + Math.tan(latRad) * Math.sin(obliquityRad);
+  // Calculate ascendant using proper formula
+  // tan(ASC) = -cos(LST) / (sin(LST) * cos(obliquity) + tan(lat) * sin(obliquity))
+  const numerator = -Math.cos(lstRad);
+  const denominator = Math.sin(lstRad) * Math.cos(obliquityRad) + Math.tan(latRad) * Math.sin(obliquityRad);
   
-  let asc = Math.atan2(y, x) * 180 / Math.PI;
+  let asc = Math.atan2(numerator, denominator) * 180 / Math.PI;
+  
+  // Normalize to 0-360
   asc = (asc + 360) % 360;
   
   return asc;
@@ -87,12 +94,13 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
 
     console.log('📍 Using coordinates:', { lat: coords.lat, lng: coords.lng, timezone: coords.timezone });
     
-    // Convert local time to UTC
-    const utcHour = hour - coords.timezone;
-    console.log('🕐 Local time:', `${hour}:${minute}`, '→ UTC:', `${utcHour}:${minute}`, `(timezone offset: ${coords.timezone})`);
-
-    // Create UTC Date object for astronomy calculations
-    const utcDate = new Date(Date.UTC(year, month - 1, day, utcHour, minute, 0));
+    // Create local date first, then convert to UTC
+    const localDate = new Date(year, month - 1, day, hour, minute, 0);
+    
+    // Convert to UTC by subtracting timezone offset (in milliseconds)
+    const utcDate = new Date(localDate.getTime() - (coords.timezone * 60 * 60 * 1000));
+    
+    console.log('🕐 Local time:', localDate.toLocaleString());
     console.log('📅 UTC Date:', utcDate.toISOString());
 
     // Calculate Sun sign (use existing function)
