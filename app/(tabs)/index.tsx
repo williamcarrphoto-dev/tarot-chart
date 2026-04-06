@@ -10,27 +10,80 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Friend } from '../../types';
-import { getFriends, saveFriend } from '../../lib/storage';
+import { getFriendProfiles, saveFriendProfile, getAcceptedFriends, addFriendByShareCode } from '../../lib/supabase-storage';
 import FriendCard from '../../components/FriendCard';
 import AddFriendModal from '../../components/AddFriendModal';
 import VideoBackground from '../../components/VideoBackground';
+import AddByCodeModal from '../../components/AddByCodeModal';
 
 export default function FriendsTab() {
   const router = useRouter();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [codeModalVisible, setCodeModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      getFriends().then(setFriends);
+      loadFriends();
     }, [])
   );
 
+  async function loadFriends() {
+    const [manualFriends, connectedFriends] = await Promise.all([
+      getFriendProfiles(),
+      getAcceptedFriends(),
+    ]);
+    
+    const allFriends = [
+      ...manualFriends.map(f => ({
+        id: f.id,
+        name: f.name,
+        birthDate: f.birth_date,
+        birthTime: f.birth_time,
+        birthLocation: f.birth_location,
+        sunSign: f.sun_sign,
+        moonSign: f.moon_sign,
+        risingSign: f.rising_sign,
+        createdAt: new Date().toISOString(),
+      })),
+      ...connectedFriends.map(f => ({
+        id: f.id,
+        name: f.name || 'Friend',
+        birthDate: f.birth_date,
+        birthTime: f.birth_time,
+        birthLocation: f.birth_location,
+        sunSign: f.sun_sign,
+        moonSign: f.moon_sign,
+        risingSign: f.rising_sign,
+        createdAt: new Date().toISOString(),
+      })),
+    ];
+    
+    setFriends(allFriends);
+  }
+
   async function handleSave(friend: Friend) {
-    await saveFriend(friend);
-    const updated = await getFriends();
-    setFriends(updated);
+    await saveFriendProfile({
+      id: friend.id,
+      name: friend.name,
+      birth_date: friend.birthDate,
+      birth_time: friend.birthTime,
+      birth_location: friend.birthLocation,
+      sun_sign: friend.sunSign,
+      moon_sign: friend.moonSign,
+      rising_sign: friend.risingSign,
+    });
+    await loadFriends();
     setModalVisible(false);
+  }
+
+  async function handleAddByCode(code: string) {
+    const { error } = await addFriendByShareCode(code);
+    if (!error) {
+      await loadFriends();
+      setCodeModalVisible(false);
+    }
+    return { error };
   }
 
   function renderEmpty() {
@@ -49,8 +102,16 @@ export default function FriendsTab() {
     <SafeAreaView style={styles.container}>
       <VideoBackground opacity={0.25} />
       <View style={styles.headerBar}>
-        <Text style={styles.headerTitle}>Ayla's Tarot</Text>
-        <Text style={styles.headerSub}>Star Profiles</Text>
+        <View>
+          <Text style={styles.headerTitle}>Ayla's Tarot</Text>
+          <Text style={styles.headerSub}>Star Profiles</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.codeButton}
+          onPress={() => setCodeModalVisible(true)}
+        >
+          <Text style={styles.codeButtonText}>+ Code</Text>
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -81,6 +142,12 @@ export default function FriendsTab() {
         onSave={handleSave}
         onClose={() => setModalVisible(false)}
       />
+
+      <AddByCodeModal
+        visible={codeModalVisible}
+        onAdd={handleAddByCode}
+        onClose={() => setCodeModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -91,11 +158,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#0e0520',
   },
   headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#1e0d38',
+  },
+  codeButton: {
+    backgroundColor: '#5c2fa8',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  codeButtonText: {
+    color: '#ede0ff',
+    fontSize: 14,
+    fontWeight: '700',
   },
   headerTitle: {
     color: '#ede0ff',
