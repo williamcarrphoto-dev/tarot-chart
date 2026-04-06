@@ -175,11 +175,17 @@ export default function ProfileTab() {
   }
 
   async function handleSave() {
+    console.log('💾 Saving profile...', formData);
     setSaving(true);
     const { error } = await updateMyProfile(formData);
+    console.log('Save result:', { error });
     if (!error) {
+      console.log('✓ Profile saved successfully');
       await loadProfile();
       setEditing(false);
+    } else {
+      console.error('❌ Error saving profile:', error);
+      Alert.alert('Error', 'Failed to save profile. Please try again.');
     }
     setSaving(false);
   }
