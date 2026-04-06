@@ -52,6 +52,7 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
       return;
     }
 
+    setShowSuggestions(true); // Show modal when user starts typing
     debounceTimer.current = setTimeout(() => {
       searchLocation(searchText);
     }, 500);
@@ -127,11 +128,6 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
           onChangeText={setSearchText}
           placeholder={placeholder}
           placeholderTextColor="#5c3d8f"
-          onFocus={() => {
-            if (suggestions.length > 0) {
-              setShowSuggestions(true);
-            }
-          }}
         />
         {loading && (
           <View style={styles.loadingIndicator}>
@@ -142,7 +138,7 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
 
       {/* Modal for suggestions dropdown */}
       <Modal
-        visible={showSuggestions && suggestions.length > 0}
+        visible={showSuggestions && suggestions.length > 0 && searchText.length >= 3}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setShowSuggestions(false)}
