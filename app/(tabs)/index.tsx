@@ -45,6 +45,7 @@ export default function FriendsTab() {
         moonSign: f.moon_sign,
         risingSign: f.rising_sign,
         createdAt: new Date().toISOString(),
+        cardDesign: f.card_design,
       })),
       ...connectedFriends.map(f => ({
         id: f.id,
@@ -56,6 +57,7 @@ export default function FriendsTab() {
         moonSign: f.moon_sign,
         risingSign: f.rising_sign,
         createdAt: new Date().toISOString(),
+        cardDesign: f.card_design,
       })),
     ];
     
@@ -124,6 +126,7 @@ export default function FriendsTab() {
           <FriendCard
             friend={item}
             onPress={() => router.push(`/friend/${item.id}`)}
+            cardDesign={item.cardDesign}
           />
         )}
         columnWrapperStyle={styles.row}

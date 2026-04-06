@@ -14,10 +14,11 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyProfile, updateMyProfile, Profile } from '../../lib/supabase-storage';
 import VideoBackground from '../../components/VideoBackground';
-import { SIGN_SYMBOLS, getSunSign } from '../../lib/astrology';
+import { SIGN_SYMBOLS, getSunSign, getSignColor } from '../../lib/astrology';
 import CardDesignSelector from '../../components/CardDesignSelector';
 import { getCardDesign } from '../../lib/cardDesigns';
 import { calculateAstrologicalSigns, canCalculateSigns } from '../../lib/astrologyCalculator';
+import { ImageBackground } from 'react-native';
 
 export default function ProfileTab() {
   const { user, signOut } = useAuth();
@@ -160,6 +161,48 @@ export default function ProfileTab() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {/* Card Preview */}
+        {!editing && profile && (
+          <View style={styles.cardPreviewSection}>
+            <Text style={styles.sectionTitle}>Your Tarot Card</Text>
+            <View style={styles.cardPreviewContainer}>
+              {profile.card_design ? (
+                <ImageBackground
+                  source={getCardDesign(profile.card_design)?.image}
+                  style={styles.cardPreview}
+                  imageStyle={styles.cardPreviewImage}
+                >
+                  <View style={styles.cardPreviewOverlay}>
+                    <View style={[styles.cardPreviewAccent, { backgroundColor: getSignColor(profile.sun_sign as any) }]} />
+                    <View style={styles.cardPreviewContent}>
+                      <Text style={styles.cardPreviewSymbol}>
+                        {profile.sun_sign && SIGN_SYMBOLS[profile.sun_sign as any] ? SIGN_SYMBOLS[profile.sun_sign as any] : '✦'}
+                      </Text>
+                      <Text style={styles.cardPreviewName}>{profile.name || 'Your Name'}</Text>
+                    </View>
+                  </View>
+                </ImageBackground>
+              ) : (
+                <View style={styles.cardPreviewPlaceholder}>
+                  <Text style={styles.cardPreviewSymbol}>
+                    {profile.sun_sign && SIGN_SYMBOLS[profile.sun_sign as any] ? SIGN_SYMBOLS[profile.sun_sign as any] : '✦'}
+                  </Text>
+                  <Text style={styles.cardPreviewName}>{profile.name || 'Your Name'}</Text>
+                  <Text style={styles.cardPreviewHint}>Choose a card design below</Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.changeCardButton}
+              onPress={() => setDesignModalVisible(true)}
+            >
+              <Text style={styles.changeCardButtonText}>
+                {profile.card_design ? '🎨 Change Card Design' : '🎨 Choose Card Design'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Share Code Card */}
         <View style={styles.shareCard}>
           <Text style={styles.shareLabel}>Your Share Code</Text>
@@ -304,15 +347,6 @@ export default function ProfileTab() {
                 <Text style={styles.editButtonText}>Edit Profile</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.designButton}
-                onPress={() => setDesignModalVisible(true)}
-              >
-                <Text style={styles.designButtonText}>
-                  {profile?.card_design ? '🎨 Change Card Design' : '🎨 Choose Card Design'}
-                </Text>
-              </TouchableOpacity>
-
               {profile && canCalculateSigns(profile.birth_date, profile.birth_time, profile.birth_location) && (
                 <TouchableOpacity
                   style={styles.recalculateButton}
@@ -378,6 +412,92 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 100,
+  },
+  sectionTitle: {
+    color: '#d4b8f0',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  cardPreviewSection: {
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  cardPreviewContainer: {
+    marginBottom: 16,
+  },
+  cardPreview: {
+    width: 200,
+    height: 300,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#5c2fa8',
+  },
+  cardPreviewImage: {
+    borderRadius: 14,
+  },
+  cardPreviewOverlay: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(14, 5, 32, 0.4)',
+    padding: 16,
+    justifyContent: 'space-between',
+  },
+  cardPreviewAccent: {
+    height: 4,
+    width: '100%',
+    opacity: 0.8,
+    borderRadius: 2,
+  },
+  cardPreviewContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardPreviewSymbol: {
+    fontSize: 64,
+    color: '#d4b8f0',
+    marginBottom: 16,
+  },
+  cardPreviewName: {
+    color: '#ede0ff',
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 1,
+  },
+  cardPreviewPlaceholder: {
+    width: 200,
+    height: 300,
+    borderRadius: 16,
+    backgroundColor: '#1a0a2e',
+    borderWidth: 2,
+    borderColor: '#2a1248',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  cardPreviewHint: {
+    color: '#7c5cbf',
+    fontSize: 12,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  changeCardButton: {
+    backgroundColor: '#5c2fa8',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  changeCardButtonText: {
+    color: '#ede0ff',
+    fontSize: 16,
+    fontWeight: '700',
   },
   shareCard: {
     backgroundColor: '#1a0a2e',

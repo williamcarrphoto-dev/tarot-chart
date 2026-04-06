@@ -23,6 +23,7 @@ export interface Friend {
   risingSign: ZodiacSign | '';
   notes?: string;
   createdAt: string;       // ISO datetime
+  cardDesign?: string;     // Card design ID
 }
 
 export interface MoonPhase {

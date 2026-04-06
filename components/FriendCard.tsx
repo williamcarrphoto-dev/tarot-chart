@@ -13,6 +13,7 @@ import { getCardDesign } from '../lib/cardDesigns';
 
 const screenWidth = Dimensions.get('window').width;
 const CARD_WIDTH = screenWidth < 400 ? (screenWidth - 32) / 2 : (screenWidth - 48) / 2;
+const CARD_HEIGHT = CARD_WIDTH * 1.5; // Tarot card aspect ratio 2:3
 
 interface Props {
   friend: Friend;
@@ -105,24 +106,26 @@ function formatDate(iso: string): string {
 const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     backgroundColor: '#1e0d38',
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: 2,
     margin: 8,
-    paddingBottom: 14,
     overflow: 'hidden',
   },
   cardBackground: {
     width: '100%',
-    minHeight: 200,
+    height: '100%',
   },
   cardBackgroundImage: {
-    borderRadius: 15,
+    borderRadius: 14,
   },
   cardOverlay: {
-    backgroundColor: 'rgba(30, 13, 56, 0.3)',
+    backgroundColor: 'rgba(14, 5, 32, 0.4)',
     width: '100%',
-    paddingBottom: 14,
+    height: '100%',
+    padding: 12,
+    justifyContent: 'space-between',
   },
   topAccent: {
     height: 4,
@@ -131,21 +134,21 @@ const styles = StyleSheet.create({
   },
   symbolRow: {
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 4,
+    marginTop: 8,
+    marginBottom: 8,
   },
   bigSymbol: {
-    fontSize: 36,
+    fontSize: 48,
     color: '#7c5cbf',
   },
   name: {
     color: '#ede0ff',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
     marginHorizontal: 8,
-    marginBottom: 8,
-    letterSpacing: 0.3,
+    marginBottom: 12,
+    letterSpacing: 0.5,
   },
   signsRow: {
     flexDirection: 'row',
