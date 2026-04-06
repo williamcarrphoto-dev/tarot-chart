@@ -12,6 +12,7 @@ import {
 import { Friend, ZodiacSign } from '../types';
 import { ZODIAC_SIGNS, getSunSign } from '../lib/astrology';
 import { calculateAstrologicalSigns, canCalculateSigns } from '../lib/astrologyCalculator';
+import LocationSearch from './LocationSearch';
 
 interface Props {
   visible: boolean;

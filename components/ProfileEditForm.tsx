@@ -12,6 +12,7 @@ import { Profile } from '../lib/supabase-storage';
 import { ZodiacSign } from '../types';
 import { ZODIAC_SIGNS } from '../lib/astrology';
 import { calculateAstrologicalSigns, canCalculateSigns } from '../lib/astrologyCalculator';
+import LocationSearch from './LocationSearch';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
@@ -136,12 +137,13 @@ export default function ProfileEditForm({ profile, onSave, onCancel, saving }: P
       </Field>
 
       <Field label="Birth Location">
-        <TextInput
-          style={styles.input}
+        <LocationSearch
           value={birthLocation}
-          onChangeText={setBirthLocation}
-          placeholder="e.g. Melbourne, Australia"
-          placeholderTextColor="#5c3d8f"
+          onSelect={(location, coords) => {
+            console.log('📍 Location selected:', location, coords);
+            setBirthLocation(location);
+          }}
+          placeholder="Search for your birth location..."
         />
       </Field>
 
