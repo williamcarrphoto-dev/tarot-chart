@@ -34,7 +34,9 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
   const [suggestions, setSuggestions] = useState<LocationResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [inputLayout, setInputLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const debounceTimer = useRef<NodeJS.Timeout>();
+  const inputRef = useRef<any>(null);
 
   useEffect(() => {
     setSearchText(value);
@@ -133,63 +135,93 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={searchText}
-          onChangeText={setSearchText}
-          placeholder={placeholder}
-          placeholderTextColor="#5c3d8f"
-        />
-        {loading && (
-          <View style={styles.loadingIndicator}>
-            <ActivityIndicator size="small" color="#7c5cbf" />
-          </View>
-        )}
+    <>
+      <View 
+        style={styles.container}
+        ref={inputRef}
+        onLayout={(event) => {
+          const layout = event.nativeEvent.layout;
+          inputRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+            setInputLayout({ x, y, width, height });
+          });
+        }}
+      >
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder={placeholder}
+            placeholderTextColor="#5c3d8f"
+          />
+          {loading && (
+            <View style={styles.loadingIndicator}>
+              <ActivityIndicator size="small" color="#7c5cbf" />
+            </View>
+          )}
+        </View>
       </View>
 
-      {/* Inline suggestions dropdown */}
-      {showSuggestions && suggestions.length > 0 && searchText.length >= 3 && (
-        <View style={styles.suggestionsContainer}>
-          <ScrollView 
-            style={styles.suggestionsList}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
+      {/* Modal overlay for suggestions */}
+      <Modal
+        visible={showSuggestions && suggestions.length > 0 && searchText.length >= 3}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowSuggestions(false)}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setShowSuggestions(false)}
+        >
+          <View 
+            style={[
+              styles.suggestionsContainer,
+              {
+                position: 'absolute',
+                top: inputLayout.y + inputLayout.height + 8,
+                left: inputLayout.x,
+                width: inputLayout.width,
+              }
+            ]}
+            onStartShouldSetResponder={() => true}
           >
-            {suggestions.map((result, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.suggestionItem}
-                onPress={() => handleSelect(result)}
-              >
-                <Text style={styles.suggestionText}>{result.display_name}</Text>
-                <Text style={styles.suggestionCoords}>
-                  {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setShowSuggestions(false)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+            <ScrollView 
+              style={styles.suggestionsList}
+              keyboardShouldPersistTaps="handled"
+            >
+              {suggestions.map((result, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestionItem}
+                  onPress={() => handleSelect(result)}
+                >
+                  <Text style={styles.suggestionText}>{result.display_name}</Text>
+                  <Text style={styles.suggestionCoords}>
+                    {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowSuggestions(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    zIndex: 1000,
   },
   inputContainer: {
     position: 'relative',
-    zIndex: 1001,
   },
   input: {
     backgroundColor: '#1e0d38',
@@ -206,12 +238,11 @@ const styles = StyleSheet.create({
     right: 14,
     top: 12,
   },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   suggestionsContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    marginTop: 8,
     backgroundColor: '#0e0520',
     borderWidth: 2,
     borderColor: '#7c5cbf',
@@ -222,7 +253,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 999,
-    zIndex: 1002,
   },
   suggestionsList: {
     maxHeight: 240,
