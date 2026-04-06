@@ -1,5 +1,6 @@
 import { ZodiacSign } from '../types';
 import { getSunSign } from './astrology';
+import * as Astronomy from 'astronomy-engine';
 
 // Convert ecliptic longitude to zodiac sign
 function longitudeToSign(longitude: number): ZodiacSign | '' {
@@ -15,45 +16,32 @@ function longitudeToSign(longitude: number): ZodiacSign | '' {
   return signs[signIndex] || '';
 }
 
-// Calculate Julian Day Number
-function toJulianDay(year: number, month: number, day: number, hour: number, minute: number): number {
-  const a = Math.floor((14 - month) / 12);
-  const y = year + 4800 - a;
-  const m = month + 12 * a - 3;
-  
-  let jdn = day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
-  const jd = jdn + (hour - 12) / 24 + minute / 1440;
-  
-  return jd;
+// Calculate moon ecliptic longitude using accurate astronomy library
+function calculateMoonPosition(date: Date): number {
+  const moonEcliptic = Astronomy.EclipticGeoMoon(date);
+  return moonEcliptic.lon;
 }
 
-// Calculate moon position (simplified)
-function calculateMoonPosition(jd: number): number {
-  // Simplified moon longitude calculation
-  const T = (jd - 2451545.0) / 36525;
-  const L0 = 218.3164477 + 481267.88123421 * T;
-  return (L0 % 360 + 360) % 360;
-}
-
-// Calculate ascendant (rising sign)
-function calculateAscendant(jd: number, lat: number, lng: number): number {
-  const T = (jd - 2451545.0) / 36525;
+// Calculate ascendant (rising sign) using accurate astronomy library
+function calculateAscendant(date: Date, lat: number, lng: number): number {
+  // Create observer location
+  const observer = new Astronomy.Observer(lat, lng, 0);
   
-  // Mean obliquity of ecliptic
-  const epsilon = 23.439291 - 0.0130042 * T;
-  const epsilonRad = epsilon * Math.PI / 180;
+  // Calculate local sidereal time
+  const hourAngle = Astronomy.SiderealTime(date);
   
-  // Greenwich Mean Sidereal Time
-  const gmst = 280.46061837 + 360.98564736629 * (jd - 2451545.0);
+  // Get obliquity of ecliptic
+  const obliquity = 23.439291 - 0.0130042 * ((Astronomy.MakeTime(date).tt - 2451545.0) / 36525);
+  const obliquityRad = obliquity * Math.PI / 180;
   
-  // Local Sidereal Time
-  const lst = (gmst + lng) % 360;
+  // Local sidereal time in degrees
+  const lst = (hourAngle * 15 + lng) % 360;
   const lstRad = lst * Math.PI / 180;
   const latRad = lat * Math.PI / 180;
   
-  // Calculate ascendant
+  // Calculate ascendant using standard formula
   const y = -Math.cos(lstRad);
-  const x = Math.sin(lstRad) * Math.cos(epsilonRad) + Math.tan(latRad) * Math.sin(epsilonRad);
+  const x = Math.sin(lstRad) * Math.cos(obliquityRad) + Math.tan(latRad) * Math.sin(obliquityRad);
   
   let asc = Math.atan2(y, x) * 180 / Math.PI;
   asc = (asc + 360) % 360;
@@ -103,20 +91,20 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
     const utcHour = hour - coords.timezone;
     console.log('🕐 Local time:', `${hour}:${minute}`, '→ UTC:', `${utcHour}:${minute}`, `(timezone offset: ${coords.timezone})`);
 
-    // Create Julian Date using UTC time
-    const jd = toJulianDay(year, month, day, utcHour, minute);
-    console.log('📅 Julian Date:', jd);
+    // Create UTC Date object for astronomy calculations
+    const utcDate = new Date(Date.UTC(year, month - 1, day, utcHour, minute, 0));
+    console.log('📅 UTC Date:', utcDate.toISOString());
 
     // Calculate Sun sign (use existing function)
     const sunSign = getSunSign(date);
 
-    // Calculate Moon position
-    const moonLongitude = calculateMoonPosition(jd);
+    // Calculate Moon position using astronomy-engine
+    const moonLongitude = calculateMoonPosition(utcDate);
     const moonSign = longitudeToSign(moonLongitude);
     console.log('🌙 Moon longitude:', moonLongitude.toFixed(2), '→', moonSign);
 
-    // Calculate Rising Sign (Ascendant)
-    const ascendantLongitude = calculateAscendant(jd, coords.lat, coords.lng);
+    // Calculate Rising Sign (Ascendant) using astronomy-engine
+    const ascendantLongitude = calculateAscendant(utcDate, coords.lat, coords.lng);
     const risingSign = longitudeToSign(ascendantLongitude);
     console.log('↑ Ascendant longitude:', ascendantLongitude.toFixed(2), '→', risingSign);
 
