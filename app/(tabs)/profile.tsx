@@ -81,8 +81,41 @@ export default function ProfileTab() {
         rising_sign: data.rising_sign || '',
         card_design: data.card_design || '',
       });
+
+      // Auto-calculate missing signs for existing users
+      if (data.birth_date && data.birth_time && data.birth_location) {
+        const needsCalculation = !data.moon_sign || !data.rising_sign;
+        if (needsCalculation) {
+          await recalculateSigns(data);
+        }
+      }
     }
     setLoading(false);
+  }
+
+  async function recalculateSigns(profileData: Profile) {
+    if (!canCalculateSigns(profileData.birth_date, profileData.birth_time, profileData.birth_location)) {
+      return;
+    }
+
+    const signs = await calculateAstrologicalSigns({
+      date: profileData.birth_date!,
+      time: profileData.birth_time!,
+      location: profileData.birth_location!,
+    });
+
+    // Only update if we got valid results
+    if (signs.moon || signs.rising) {
+      const updates: Partial<Profile> = {};
+      if (signs.sun && !profileData.sun_sign) updates.sun_sign = signs.sun;
+      if (signs.moon && !profileData.moon_sign) updates.moon_sign = signs.moon;
+      if (signs.rising && !profileData.rising_sign) updates.rising_sign = signs.rising;
+
+      if (Object.keys(updates).length > 0) {
+        await updateMyProfile(updates);
+        await loadProfile(); // Reload to show updated data
+      }
+    }
   }
 
   async function handleCardDesignSelect(designId: string) {
@@ -279,6 +312,18 @@ export default function ProfileTab() {
                   {profile?.card_design ? '🎨 Change Card Design' : '🎨 Choose Card Design'}
                 </Text>
               </TouchableOpacity>
+
+              {profile && canCalculateSigns(profile.birth_date, profile.birth_time, profile.birth_location) && (
+                <TouchableOpacity
+                  style={styles.recalculateButton}
+                  onPress={() => profile && recalculateSigns(profile)}
+                  disabled={saving}
+                >
+                  <Text style={styles.recalculateButtonText}>
+                    ♈ Recalculate Signs
+                  </Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
         </View>
@@ -460,6 +505,20 @@ const styles = StyleSheet.create({
     color: '#d4b8f0',
     fontSize: 16,
     fontWeight: '700',
+  },
+  recalculateButton: {
+    backgroundColor: '#1e0d38',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#4a2f7a',
+  },
+  recalculateButtonText: {
+    color: '#9c7cbf',
+    fontSize: 14,
+    fontWeight: '600',
   },
   input: {
     backgroundColor: '#120826',
