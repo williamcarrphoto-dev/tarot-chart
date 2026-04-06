@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Friend } from '../../types';
@@ -98,9 +99,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#ede0ff',
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    fontFamily: Platform.OS === 'web' ? 'Cinzel Decorative, serif' : undefined,
   },
   headerSub: {
     color: '#7c5cbf',

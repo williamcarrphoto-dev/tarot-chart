@@ -17,6 +17,7 @@ export default function VideoBackground({ opacity = 0.3 }: Props) {
         loop
         muted
         playsInline
+        preload="auto"
         style={{
           position: 'absolute',
           top: 0,
@@ -26,7 +27,6 @@ export default function VideoBackground({ opacity = 0.3 }: Props) {
           objectFit: 'cover',
           objectPosition: 'center top',
           opacity: opacity,
-          filter: 'blur(2px)',
         }}
       >
         <source src={require('../assets/cosmic-background.mp4')} type="video/mp4" />

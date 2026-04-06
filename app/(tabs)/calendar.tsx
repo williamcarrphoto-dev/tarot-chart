@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useFocusEffect } from 'expo-router';
@@ -278,9 +279,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#ede0ff',
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    fontFamily: Platform.OS === 'web' ? 'Cinzel Decorative, serif' : undefined,
   },
   headerSub: {
     color: '#7c5cbf',
