@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 
 interface LocationResult {
@@ -118,78 +119,78 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
   }
 
   return (
-    <>
-      <View style={styles.container}>
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholder={placeholder}
-            placeholderTextColor="#5c3d8f"
-            onFocus={() => {
-              if (suggestions.length > 0) {
-                setShowSuggestions(true);
-              }
-            }}
-          />
-          {loading && (
-            <View style={styles.loadingIndicator}>
-              <ActivityIndicator size="small" color="#7c5cbf" />
-            </View>
-          )}
-        </View>
-
-        {showSuggestions && suggestions.length > 0 && (
-          <View style={styles.suggestionsContainer}>
-            <ScrollView 
-              style={styles.suggestionsList}
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled"
-            >
-              {suggestions.map((result, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.suggestionItem}
-                  onPress={() => handleSelect(result)}
-                >
-                  <Text style={styles.suggestionText}>{result.display_name}</Text>
-                  <Text style={styles.suggestionCoords}>
-                    {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowSuggestions(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
+    <View style={styles.container}>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          value={searchText}
+          onChangeText={setSearchText}
+          placeholder={placeholder}
+          placeholderTextColor="#5c3d8f"
+          onFocus={() => {
+            if (suggestions.length > 0) {
+              setShowSuggestions(true);
+            }
+          }}
+        />
+        {loading && (
+          <View style={styles.loadingIndicator}>
+            <ActivityIndicator size="small" color="#7c5cbf" />
           </View>
         )}
       </View>
 
-      {/* Backdrop overlay */}
-      {showSuggestions && suggestions.length > 0 && (
+      {/* Modal for suggestions dropdown */}
+      <Modal
+        visible={showSuggestions && suggestions.length > 0}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSuggestions(false)}
+      >
         <TouchableOpacity
-          style={styles.backdrop}
+          style={styles.modalBackdrop}
           activeOpacity={1}
           onPress={() => setShowSuggestions(false)}
-        />
-      )}
-    </>
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.suggestionsContainer}>
+              <ScrollView 
+                style={styles.suggestionsList}
+                keyboardShouldPersistTaps="handled"
+              >
+                {suggestions.map((result, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.suggestionItem}
+                    onPress={() => handleSelect(result)}
+                  >
+                    <Text style={styles.suggestionText}>{result.display_name}</Text>
+                    <Text style={styles.suggestionCoords}>
+                      {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowSuggestions(false)}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    zIndex: 9999,
   },
   inputContainer: {
     position: 'relative',
-    zIndex: 10000,
   },
   input: {
     backgroundColor: '#1e0d38',
@@ -206,18 +207,23 @@ const styles = StyleSheet.create({
     right: 14,
     top: 12,
   },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(14, 5, 32, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 600,
+  },
   suggestionsContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
     backgroundColor: '#0e0520',
     borderWidth: 2,
     borderColor: '#7c5cbf',
     borderRadius: 12,
-    marginTop: 8,
-    maxHeight: 250,
-    zIndex: 10001,
+    maxHeight: 400,
     shadowColor: '#7c5cbf',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
@@ -225,7 +231,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   suggestionsList: {
-    maxHeight: 200,
+    maxHeight: 320,
   },
   suggestionItem: {
     padding: 14,
@@ -254,14 +260,5 @@ const styles = StyleSheet.create({
     color: '#7c5cbf',
     fontSize: 13,
     fontWeight: '600',
-  },
-  backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(14, 5, 32, 0.85)',
-    zIndex: 9998,
   },
 });
