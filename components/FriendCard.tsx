@@ -9,7 +9,8 @@ import {
 import { Friend } from '../types';
 import { SIGN_SYMBOLS, getSignColor } from '../lib/astrology';
 
-const CARD_WIDTH = (Dimensions.get('window').width - 48) / 2;
+const screenWidth = Dimensions.get('window').width;
+const CARD_WIDTH = screenWidth < 400 ? (screenWidth - 32) / 2 : (screenWidth - 48) / 2;
 
 interface Props {
   friend: Friend;
