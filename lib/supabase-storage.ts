@@ -88,17 +88,25 @@ export async function saveFriendProfile(friend: Partial<FriendProfile>): Promise
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
+  console.log('💾 Saving friend profile:', { hasId: !!friend.id, name: friend.name });
+
   if (friend.id) {
+    // Update existing friend - don't include id in the update payload
+    const { id, ...updateData } = friend;
     const { error } = await supabase
       .from('friend_profiles')
-      .update(friend)
-      .eq('id', friend.id)
+      .update(updateData)
+      .eq('id', id)
       .eq('user_id', user.id);
+    if (error) console.error('❌ Friend update error:', error);
     return { error };
   } else {
+    // Insert new friend - let Supabase generate the id
     const { error } = await supabase
       .from('friend_profiles')
       .insert({ ...friend, user_id: user.id });
+    if (error) console.error('❌ Friend insert error:', error);
+    else console.log('✅ Friend saved successfully');
     return { error };
   }
 }

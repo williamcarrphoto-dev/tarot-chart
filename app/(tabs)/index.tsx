@@ -66,7 +66,6 @@ export default function FriendsTab() {
 
   async function handleSave(friend: Friend) {
     await saveFriendProfile({
-      id: friend.id,
       name: friend.name,
       birth_date: friend.birthDate,
       birth_time: friend.birthTime,
