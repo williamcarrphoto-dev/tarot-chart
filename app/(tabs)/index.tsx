@@ -12,6 +12,7 @@ import { Friend } from '../../types';
 import { getFriends, saveFriend } from '../../lib/storage';
 import FriendCard from '../../components/FriendCard';
 import AddFriendModal from '../../components/AddFriendModal';
+import VideoBackground from '../../components/VideoBackground';
 
 export default function FriendsTab() {
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function FriendsTab() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <VideoBackground opacity={0.25} />
       <View style={styles.headerBar}>
         <Text style={styles.headerTitle}>Ayla's Tarot</Text>
         <Text style={styles.headerSub}>Star Profiles</Text>

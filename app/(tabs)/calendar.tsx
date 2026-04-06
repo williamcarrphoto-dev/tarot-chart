@@ -14,6 +14,7 @@ import { getFriends } from '../../lib/storage';
 import { fetchAstroEventsForMonth, fetchMoonPhase } from '../../lib/api';
 import { SIGN_SYMBOLS } from '../../lib/astrology';
 import AstroEvent from '../../components/AstroEvent';
+import VideoBackground from '../../components/VideoBackground';
 
 interface MarkedDate {
   dots?: { key: string; color: string }[];
@@ -124,6 +125,7 @@ export default function CalendarTab() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <VideoBackground opacity={0.25} />
       <View style={styles.headerBar}>
         <Text style={styles.headerTitle}>Ayla's Tarot</Text>
         <Text style={styles.headerSub}>Astro Calendar</Text>
