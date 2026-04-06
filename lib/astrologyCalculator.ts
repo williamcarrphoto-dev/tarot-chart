@@ -92,7 +92,9 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
     // Get coordinates from location
     const coords = await getCoordinates(location);
     if (!coords) {
-      return { sun: '', moon: '', rising: '' };
+      console.log('⚠️ Cannot calculate moon/rising signs - failed to get coordinates for:', location);
+      console.log('💡 Try entering location as: "City, Country" or "latitude,longitude"');
+      return { sun: getSunSign(date), moon: '', rising: '' };
     }
 
     // Create Julian Date
@@ -130,34 +132,43 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
  * Supports: "lat,lng" format or city name (uses geocoding)
  */
 async function getCoordinates(location: string): Promise<{ lat: number; lng: number } | null> {
+  console.log('🌍 Geocoding location:', location);
+  
   // Check if already in lat,lng format
   if (location.includes(',')) {
     const [lat, lng] = location.split(',').map(s => parseFloat(s.trim()));
     if (!isNaN(lat) && !isNaN(lng)) {
+      console.log('✓ Using provided coordinates:', { lat, lng });
       return { lat, lng };
     }
   }
 
   // Try to geocode city name using free Nominatim API
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`,
-      {
-        headers: {
-          'User-Agent': 'AylasTarotApp/1.0',
-        },
-      }
-    );
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`;
+    console.log('🔍 Geocoding request:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'AylasTarotApp/1.0',
+      },
+    });
     const data = await response.json();
     
+    console.log('📍 Geocoding response:', data);
+    
     if (data && data.length > 0) {
-      return {
+      const coords = {
         lat: parseFloat(data[0].lat),
         lng: parseFloat(data[0].lon),
       };
+      console.log('✓ Found coordinates:', coords, 'for:', data[0].display_name);
+      return coords;
+    } else {
+      console.log('❌ No coordinates found for location:', location);
     }
   } catch (error) {
-    console.error('Geocoding error:', error);
+    console.error('❌ Geocoding error:', error);
   }
 
   return null;
