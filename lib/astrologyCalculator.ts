@@ -89,7 +89,7 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
     const [year, month, day] = date.split('-').map(Number);
     const [hour, minute] = time.split(':').map(Number);
 
-    // Get coordinates from location
+    // Get coordinates and timezone from location
     const coords = await getCoordinates(location);
     if (!coords) {
       console.log('⚠️ Cannot calculate moon/rising signs - failed to get coordinates for:', location);
@@ -97,8 +97,15 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
       return { sun: getSunSign(date), moon: '', rising: '' };
     }
 
-    // Create Julian Date
-    const jd = toJulianDay(year, month, day, hour, minute);
+    console.log('📍 Using coordinates:', { lat: coords.lat, lng: coords.lng, timezone: coords.timezone });
+    
+    // Convert local time to UTC
+    const utcHour = hour - coords.timezone;
+    console.log('🕐 Local time:', `${hour}:${minute}`, '→ UTC:', `${utcHour}:${minute}`, `(timezone offset: ${coords.timezone})`);
+
+    // Create Julian Date using UTC time
+    const jd = toJulianDay(year, month, day, utcHour, minute);
+    console.log('📅 Julian Date:', jd);
 
     // Calculate Sun sign (use existing function)
     const sunSign = getSunSign(date);
@@ -106,10 +113,12 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
     // Calculate Moon position
     const moonLongitude = calculateMoonPosition(jd);
     const moonSign = longitudeToSign(moonLongitude);
+    console.log('🌙 Moon longitude:', moonLongitude.toFixed(2), '→', moonSign);
 
     // Calculate Rising Sign (Ascendant)
     const ascendantLongitude = calculateAscendant(jd, coords.lat, coords.lng);
     const risingSign = longitudeToSign(ascendantLongitude);
+    console.log('↑ Ascendant longitude:', ascendantLongitude.toFixed(2), '→', risingSign);
 
     return {
       sun: sunSign,
@@ -128,37 +137,46 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
 }
 
 // Common city coordinates for fallback when geocoding fails
-const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
-  // Australian cities
-  'sydney': { lat: -33.8688, lng: 151.2093 },
-  'melbourne': { lat: -37.8136, lng: 144.9631 },
-  'brisbane': { lat: -27.4698, lng: 153.0251 },
-  'perth': { lat: -31.9505, lng: 115.8605 },
-  'adelaide': { lat: -34.9285, lng: 138.6007 },
-  'canberra': { lat: -35.2809, lng: 149.1300 },
+// Includes timezone offset in hours for UTC conversion
+const CITY_COORDINATES: Record<string, { lat: number; lng: number; timezone: number }> = {
+  // Australian cities (UTC+10, or UTC+11 during daylight saving - using standard time)
+  'sydney': { lat: -33.8688, lng: 151.2093, timezone: 10 },
+  'melbourne': { lat: -37.8136, lng: 144.9631, timezone: 10 },
+  'brisbane': { lat: -27.4698, lng: 153.0251, timezone: 10 },
+  'perth': { lat: -31.9505, lng: 115.8605, timezone: 8 },
+  'adelaide': { lat: -34.9285, lng: 138.6007, timezone: 9.5 },
+  'canberra': { lat: -35.2809, lng: 149.1300, timezone: 10 },
+  // Melbourne suburbs
+  'st albans': { lat: -37.7450, lng: 144.8005, timezone: 10 },
+  'footscray': { lat: -37.7996, lng: 144.9008, timezone: 10 },
+  'richmond': { lat: -37.8197, lng: 144.9984, timezone: 10 },
+  'brunswick': { lat: -37.7667, lng: 144.9600, timezone: 10 },
+  'preston': { lat: -37.7400, lng: 145.0000, timezone: 10 },
   // Major world cities
-  'london': { lat: 51.5074, lng: -0.1278 },
-  'new york': { lat: 40.7128, lng: -74.0060 },
-  'los angeles': { lat: 34.0522, lng: -118.2437 },
-  'tokyo': { lat: 35.6762, lng: 139.6503 },
-  'paris': { lat: 48.8566, lng: 2.3522 },
+  'london': { lat: 51.5074, lng: -0.1278, timezone: 0 },
+  'new york': { lat: 40.7128, lng: -74.0060, timezone: -5 },
+  'los angeles': { lat: 34.0522, lng: -118.2437, timezone: -8 },
+  'tokyo': { lat: 35.6762, lng: 139.6503, timezone: 9 },
+  'paris': { lat: 48.8566, lng: 2.3522, timezone: 1 },
 };
 
 /**
- * Get coordinates from location string
+ * Get coordinates and timezone from location string
  * Supports: "lat,lng" format, city name lookup, or geocoding
  */
-async function getCoordinates(location: string): Promise<{ lat: number; lng: number } | null> {
+async function getCoordinates(location: string): Promise<{ lat: number; lng: number; timezone: number } | null> {
   console.log('🌍 Getting coordinates for:', location);
   
-  // Check if already in lat,lng format
+  // Check if already in lat,lng format (assume UTC+0 if no timezone specified)
   if (location.includes(',')) {
     const parts = location.split(',');
     if (parts.length === 2) {
       const [lat, lng] = parts.map(s => parseFloat(s.trim()));
       if (!isNaN(lat) && !isNaN(lng)) {
         console.log('✓ Using provided coordinates:', { lat, lng });
-        return { lat, lng };
+        // Default to UTC+10 for Australian coordinates, UTC+0 otherwise
+        const timezone = (lat < -10 && lat > -45 && lng > 110 && lng < 155) ? 10 : 0;
+        return { lat, lng, timezone };
       }
     }
   }
@@ -185,10 +203,11 @@ async function getCoordinates(location: string): Promise<{ lat: number; lng: num
     const data = await response.json();
     
     if (data && data.length > 0) {
-      const coords = {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
-      };
+      const lat = parseFloat(data[0].lat);
+      const lng = parseFloat(data[0].lon);
+      // Estimate timezone based on longitude (rough approximation)
+      const timezone = Math.round(lng / 15);
+      const coords = { lat, lng, timezone };
       console.log('✓ Geocoded coordinates:', coords, 'for:', data[0].display_name);
       return coords;
     }
@@ -198,7 +217,7 @@ async function getCoordinates(location: string): Promise<{ lat: number; lng: num
 
   console.log('❌ Could not find coordinates for:', location);
   console.log('💡 Supported cities:', Object.keys(CITY_COORDINATES).join(', '));
-  console.log('💡 Or enter as: "latitude,longitude" (e.g. "-37.8136,144.9631")');
+  console.log('💡 Or enter as: "latitude,longitude" (e.g. "-37.7450,144.8005")');
   return null;
 }
 
