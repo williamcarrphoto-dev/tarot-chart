@@ -5,9 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  ImageBackground,
 } from 'react-native';
 import { Friend } from '../types';
 import { SIGN_SYMBOLS, getSignColor } from '../lib/astrology';
+import { getCardDesign } from '../lib/cardDesigns';
 
 const screenWidth = Dimensions.get('window').width;
 const CARD_WIDTH = screenWidth < 400 ? (screenWidth - 32) / 2 : (screenWidth - 48) / 2;
@@ -15,10 +17,15 @@ const CARD_WIDTH = screenWidth < 400 ? (screenWidth - 32) / 2 : (screenWidth - 4
 interface Props {
   friend: Friend;
   onPress: () => void;
+  cardDesign?: string;
 }
 
-export default function FriendCard({ friend, onPress }: Props) {
+export default function FriendCard({ friend, onPress, cardDesign }: Props) {
   const sunColor = getSignColor(friend.sunSign);
+  const design = getCardDesign(cardDesign);
+
+  const CardWrapper = design ? ImageBackground : View;
+  const wrapperProps = design ? { source: design.image, style: styles.cardBackground, imageStyle: styles.cardBackgroundImage } : {};
 
   return (
     <TouchableOpacity
@@ -26,7 +33,9 @@ export default function FriendCard({ friend, onPress }: Props) {
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <View style={[styles.topAccent, { backgroundColor: sunColor }]} />
+      <CardWrapper {...wrapperProps}>
+        <View style={design ? styles.cardOverlay : undefined}>
+          <View style={[styles.topAccent, { backgroundColor: sunColor }]} />
 
       <View style={styles.symbolRow}>
         {friend.sunSign ? (
@@ -59,6 +68,8 @@ export default function FriendCard({ friend, onPress }: Props) {
           {formatDate(friend.birthDate)}
         </Text>
       ) : null}
+        </View>
+      </CardWrapper>
     </TouchableOpacity>
   );
 }
@@ -100,6 +111,18 @@ const styles = StyleSheet.create({
     margin: 8,
     paddingBottom: 14,
     overflow: 'hidden',
+  },
+  cardBackground: {
+    width: '100%',
+    minHeight: 200,
+  },
+  cardBackgroundImage: {
+    borderRadius: 15,
+  },
+  cardOverlay: {
+    backgroundColor: 'rgba(30, 13, 56, 0.3)',
+    width: '100%',
+    paddingBottom: 14,
   },
   topAccent: {
     height: 4,

@@ -11,6 +11,8 @@ export interface Profile {
   moon_sign?: string;
   rising_sign?: string;
   share_code?: string;
+  card_design?: string;
+  custom_card_image?: string;
 }
 
 export interface FriendProfile {
@@ -24,6 +26,7 @@ export interface FriendProfile {
   moon_sign?: string;
   rising_sign?: string;
   notes?: string;
+  card_design?: string;
 }
 
 export async function getMyProfile(): Promise<Profile | null> {

@@ -15,6 +15,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getMyProfile, updateMyProfile, Profile } from '../../lib/supabase-storage';
 import VideoBackground from '../../components/VideoBackground';
 import { SIGN_SYMBOLS } from '../../lib/astrology';
+import CardDesignSelector from '../../components/CardDesignSelector';
+import { getCardDesign } from '../../lib/cardDesigns';
 
 export default function ProfileTab() {
   const { user, signOut } = useAuth();
@@ -22,6 +24,7 @@ export default function ProfileTab() {
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [designModalVisible, setDesignModalVisible] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     birth_date: '',
@@ -30,6 +33,7 @@ export default function ProfileTab() {
     sun_sign: '',
     moon_sign: '',
     rising_sign: '',
+    card_design: '',
   });
 
   useFocusEffect(
@@ -51,9 +55,17 @@ export default function ProfileTab() {
         sun_sign: data.sun_sign || '',
         moon_sign: data.moon_sign || '',
         rising_sign: data.rising_sign || '',
+        card_design: data.card_design || '',
       });
     }
     setLoading(false);
+  }
+
+  async function handleCardDesignSelect(designId: string) {
+    setSaving(true);
+    await updateMyProfile({ card_design: designId });
+    await loadProfile();
+    setSaving(false);
   }
 
   async function handleSave() {
@@ -234,10 +246,26 @@ export default function ProfileTab() {
               >
                 <Text style={styles.editButtonText}>Edit Profile</Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.designButton}
+                onPress={() => setDesignModalVisible(true)}
+              >
+                <Text style={styles.designButtonText}>
+                  {profile?.card_design ? '🎨 Change Card Design' : '🎨 Choose Card Design'}
+                </Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
       </ScrollView>
+
+      <CardDesignSelector
+        visible={designModalVisible}
+        currentDesign={profile?.card_design}
+        onSelect={handleCardDesignSelect}
+        onClose={() => setDesignModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -392,6 +420,20 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     color: '#ede0ff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  designButton: {
+    backgroundColor: '#2a1248',
+    borderRadius: 12,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#3a1f5e',
+  },
+  designButtonText: {
+    color: '#d4b8f0',
     fontSize: 16,
     fontWeight: '700',
   },
