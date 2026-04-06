@@ -12,6 +12,7 @@ import {
 import { Friend } from '../types';
 import { SIGN_SYMBOLS, getSignColor } from '../lib/astrology';
 import { getCardDesign } from '../lib/cardDesigns';
+import { getDailyHoroscope } from '../lib/dailyHoroscope';
 
 const screenWidth = Dimensions.get('window').width;
 const CARD_WIDTH = screenWidth < 400 ? (screenWidth - 32) / 2 : (screenWidth - 48) / 2;
@@ -26,6 +27,11 @@ interface Props {
 export default function FriendCard({ friend, onPress, cardDesign }: Props) {
   const sunColor = getSignColor(friend.sunSign);
   const design = getCardDesign(cardDesign);
+  const horoscope = getDailyHoroscope(
+    friend.sunSign || '',
+    friend.moonSign || '',
+    friend.risingSign || '',
+  );
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flipped, setFlipped] = useState(false);
 
@@ -115,8 +121,11 @@ export default function FriendCard({ friend, onPress, cardDesign }: Props) {
               ) : null}
             </View>
 
-            {friend.birthDate ? (
-              <Text style={styles.birthDate}>{formatDate(friend.birthDate)}</Text>
+            {horoscope ? (
+              <View style={styles.horoscopeBox}>
+                <Text style={styles.horoscopeTitle}>Today</Text>
+                <Text style={styles.horoscopeText} numberOfLines={4}>{horoscope}</Text>
+              </View>
             ) : null}
 
             <TouchableOpacity style={styles.viewBtn} onPress={onPress}>
@@ -195,7 +204,7 @@ const styles = StyleSheet.create({
   },
   backContent: {
     flex: 1,
-    padding: 12,
+    padding: 14,
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -207,39 +216,58 @@ const styles = StyleSheet.create({
   },
   symbolRow: {
     alignItems: 'center',
-    marginVertical: 4,
+    marginVertical: 2,
   },
   bigSymbol: {
-    fontSize: 40,
+    fontSize: 36,
     color: '#7c5cbf',
   },
   signsColumn: {
     width: '100%',
-    gap: 6,
+    gap: 8,
   },
   signRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
   },
   signIcon: {
-    fontSize: 14,
+    fontSize: 16,
   },
   signLabel: {
     color: '#7c5cbf',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
-    width: 42,
+    width: 48,
   },
   signValue: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
   },
-  birthDate: {
-    color: '#7c5cbf',
-    fontSize: 11,
+  horoscopeBox: {
+    width: '100%',
+    backgroundColor: '#1a0a2e',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#2a1248',
+  },
+  horoscopeTitle: {
+    color: '#9c7cbf',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
     textAlign: 'center',
+  },
+  horoscopeText: {
+    color: '#c8b0e8',
+    fontSize: 10,
+    lineHeight: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   viewBtn: {
     backgroundColor: '#5c2fa8',
