@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Friend, ZodiacSign } from '../types';
 import { ZODIAC_SIGNS, getSunSign } from '../lib/astrology';
+import { calculateAstrologicalSigns, canCalculateSigns } from '../lib/astrologyCalculator';
 
 interface Props {
   visible: boolean;
@@ -80,12 +81,31 @@ export default function AddFriendModal({
     }
   }, [existing, visible]);
 
-  // Auto-derive sun sign when date changes
+  // Auto-calculate all signs when birth data changes
   useEffect(() => {
-    const iso = `${year}-${month}-${day}`;
-    const derived = getSunSign(iso);
-    if (derived) setSunSign(derived);
-  }, [day, month, year]);
+    async function autoCalculateSigns() {
+      const birthDate = `${year}-${month}-${day}`;
+      const birthTime = `${hour}:${minute}`;
+      
+      if (canCalculateSigns(birthDate, birthTime, birthLocation)) {
+        const signs = await calculateAstrologicalSigns({
+          date: birthDate,
+          time: birthTime,
+          location: birthLocation,
+        });
+        
+        if (signs.sun) setSunSign(signs.sun);
+        if (signs.moon) setMoonSign(signs.moon);
+        if (signs.rising) setRisingSign(signs.rising);
+      } else {
+        // Fallback to just sun sign if we don't have all data
+        const derived = getSunSign(birthDate);
+        if (derived) setSunSign(derived);
+      }
+    }
+    
+    autoCalculateSigns();
+  }, [day, month, year, hour, minute, birthLocation]);
 
   function handleSave() {
     if (!name.trim()) {

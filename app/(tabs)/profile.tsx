@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,10 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyProfile, updateMyProfile, Profile } from '../../lib/supabase-storage';
 import VideoBackground from '../../components/VideoBackground';
-import { SIGN_SYMBOLS } from '../../lib/astrology';
+import { SIGN_SYMBOLS, getSunSign } from '../../lib/astrology';
 import CardDesignSelector from '../../components/CardDesignSelector';
 import { getCardDesign } from '../../lib/cardDesigns';
+import { calculateAstrologicalSigns, canCalculateSigns } from '../../lib/astrologyCalculator';
 
 export default function ProfileTab() {
   const { user, signOut } = useAuth();
@@ -41,6 +42,29 @@ export default function ProfileTab() {
       loadProfile();
     }, [])
   );
+
+  useEffect(() => {
+    async function autoCalculateSigns() {
+      if (canCalculateSigns(formData.birth_date, formData.birth_time, formData.birth_location)) {
+        const signs = await calculateAstrologicalSigns({
+          date: formData.birth_date,
+          time: formData.birth_time,
+          location: formData.birth_location,
+        });
+        
+        setFormData(prev => ({
+          ...prev,
+          sun_sign: signs.sun || prev.sun_sign,
+          moon_sign: signs.moon || prev.moon_sign,
+          rising_sign: signs.rising || prev.rising_sign,
+        }));
+      }
+    }
+
+    if (editing) {
+      autoCalculateSigns();
+    }
+  }, [formData.birth_date, formData.birth_time, formData.birth_location, editing]);
 
   async function loadProfile() {
     setLoading(true);
