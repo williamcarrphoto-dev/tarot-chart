@@ -234,17 +234,9 @@ export default function ProfileTab() {
                   source={getCardDesign(profile.card_design)?.image}
                   style={styles.cardPreview}
                   imageStyle={styles.cardPreviewImage}
-                >
-                  <View style={styles.cardPreviewOverlay}>
-                    <View style={[styles.cardPreviewAccent, { backgroundColor: getSignColor(profile.sun_sign as any) }]} />
-                    <View style={styles.cardPreviewContent}>
-                      <Text style={styles.cardPreviewName}>{profile.name || 'Your Name'}</Text>
-                    </View>
-                  </View>
-                </ImageBackground>
+                />
               ) : (
                 <View style={styles.cardPreviewPlaceholder}>
-                  <Text style={styles.cardPreviewName}>{profile.name || 'Your Name'}</Text>
                   <Text style={styles.cardPreviewHint}>Choose a card design below</Text>
                 </View>
               )}
@@ -420,7 +412,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: '#d4b8f0',
-    fontSize: 14,
+    fontSize: 24,
     fontWeight: '700',
     letterSpacing: 1.5,
     textTransform: 'uppercase',
