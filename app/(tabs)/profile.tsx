@@ -2,13 +2,14 @@ import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
+  ScrollView,
   StyleSheet,
   SafeAreaView,
   Platform,
   TextInput,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -86,11 +87,26 @@ export default function ProfileTab() {
       // Auto-calculate missing signs for existing users
       if (data.birth_date && data.birth_time && data.birth_location) {
         const needsCalculation = !data.moon_sign || !data.rising_sign;
-        console.log('Checking if signs need calculation:', { needsCalculation, moon: data.moon_sign, rising: data.rising_sign });
+        console.log('Checking if signs need calculation:', { 
+          needsCalculation, 
+          moon: data.moon_sign, 
+          rising: data.rising_sign,
+          hasDate: !!data.birth_date,
+          hasTime: !!data.birth_time,
+          hasLocation: !!data.birth_location
+        });
         if (needsCalculation) {
-          console.log('Recalculating signs for existing user...');
+          console.log('🌙 Recalculating missing signs for existing user...');
           await recalculateSigns(data);
+        } else {
+          console.log('✓ All signs already calculated');
         }
+      } else {
+        console.log('⚠️ Cannot auto-calculate signs - missing data:', {
+          hasDate: !!data.birth_date,
+          hasTime: !!data.birth_time,
+          hasLocation: !!data.birth_location
+        });
       }
     }
     setLoading(false);
@@ -128,9 +144,21 @@ export default function ProfileTab() {
       if (Object.keys(updates).length > 0) {
         await updateMyProfile(updates);
         await loadProfile(); // Reload to show updated data
+        
+        // Show success message to user
+        const updatedSigns = [];
+        if (updates.moon_sign) updatedSigns.push('Moon');
+        if (updates.rising_sign) updatedSigns.push('Rising');
+        if (updatedSigns.length > 0) {
+          Alert.alert(
+            '✨ Signs Calculated',
+            `Your ${updatedSigns.join(' and ')} sign${updatedSigns.length > 1 ? 's have' : ' has'} been automatically calculated!`,
+            [{ text: 'OK' }]
+          );
+        }
       }
     } else {
-      console.log('No valid signs calculated');
+      console.log('❌ No valid signs calculated - check birth data');
     }
   }
 
