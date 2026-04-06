@@ -20,6 +20,7 @@ import CardDesignSelector from '../../components/CardDesignSelector';
 import { getCardDesign } from '../../lib/cardDesigns';
 import { calculateAstrologicalSigns, canCalculateSigns } from '../../lib/astrologyCalculator';
 import { ImageBackground } from 'react-native';
+import ProfileEditForm from '../../components/ProfileEditForm';
 
 export default function ProfileTab() {
   const { user, signOut } = useAuth();
@@ -267,78 +268,26 @@ export default function ProfileTab() {
         {/* Profile Card */}
         <View style={styles.profileCard}>
           {editing ? (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Name"
-                placeholderTextColor="#7c5cbf"
-                value={formData.name}
-                onChangeText={(text) => setFormData({ ...formData, name: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Birth Date (YYYY-MM-DD)"
-                placeholderTextColor="#7c5cbf"
-                value={formData.birth_date}
-                onChangeText={(text) => setFormData({ ...formData, birth_date: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Birth Time (HH:MM)"
-                placeholderTextColor="#7c5cbf"
-                value={formData.birth_time}
-                onChangeText={(text) => setFormData({ ...formData, birth_time: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Birth Location"
-                placeholderTextColor="#7c5cbf"
-                value={formData.birth_location}
-                onChangeText={(text) => setFormData({ ...formData, birth_location: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Sun Sign"
-                placeholderTextColor="#7c5cbf"
-                value={formData.sun_sign}
-                onChangeText={(text) => setFormData({ ...formData, sun_sign: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Moon Sign"
-                placeholderTextColor="#7c5cbf"
-                value={formData.moon_sign}
-                onChangeText={(text) => setFormData({ ...formData, moon_sign: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Rising Sign"
-                placeholderTextColor="#7c5cbf"
-                value={formData.rising_sign}
-                onChangeText={(text) => setFormData({ ...formData, rising_sign: text })}
-              />
-
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={[styles.button, styles.cancelButton]}
-                  onPress={() => setEditing(false)}
-                  disabled={saving}
-                >
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.saveButton]}
-                  onPress={handleSave}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator color="#ede0ff" />
-                  ) : (
-                    <Text style={styles.buttonText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </>
+            <ProfileEditForm
+              profile={profile}
+              onSave={async (data) => {
+                console.log('💾 Saving profile...', data);
+                setSaving(true);
+                const { error } = await updateMyProfile(data);
+                console.log('Save result:', { error });
+                if (!error) {
+                  console.log('✓ Profile saved successfully');
+                  await loadProfile();
+                  setEditing(false);
+                } else {
+                  console.error('❌ Error saving profile:', error);
+                  Alert.alert('Error', 'Failed to save profile. Please try again.');
+                }
+                setSaving(false);
+              }}
+              onCancel={() => setEditing(false)}
+              saving={saving}
+            />
           ) : (
             <>
               <View style={styles.symbolRow}>
