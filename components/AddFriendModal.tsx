@@ -201,6 +201,7 @@ export default function AddFriendModal({
                   setBirthLocation(location);
                 }}
                 placeholder="Search for birth location..."
+                useInlineDropdown={true}
               />
             </Field>
 
