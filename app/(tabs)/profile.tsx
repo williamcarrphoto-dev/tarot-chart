@@ -86,7 +86,9 @@ export default function ProfileTab() {
       // Auto-calculate missing signs for existing users
       if (data.birth_date && data.birth_time && data.birth_location) {
         const needsCalculation = !data.moon_sign || !data.rising_sign;
+        console.log('Checking if signs need calculation:', { needsCalculation, moon: data.moon_sign, rising: data.rising_sign });
         if (needsCalculation) {
+          console.log('Recalculating signs for existing user...');
           await recalculateSigns(data);
         }
       }
@@ -96,14 +98,23 @@ export default function ProfileTab() {
 
   async function recalculateSigns(profileData: Profile) {
     if (!canCalculateSigns(profileData.birth_date, profileData.birth_time, profileData.birth_location)) {
+      console.log('Cannot calculate signs - missing data');
       return;
     }
+
+    console.log('Calculating signs with:', {
+      date: profileData.birth_date,
+      time: profileData.birth_time,
+      location: profileData.birth_location
+    });
 
     const signs = await calculateAstrologicalSigns({
       date: profileData.birth_date!,
       time: profileData.birth_time!,
       location: profileData.birth_location!,
     });
+
+    console.log('Calculated signs:', signs);
 
     // Only update if we got valid results
     if (signs.moon || signs.rising) {
@@ -112,10 +123,14 @@ export default function ProfileTab() {
       if (signs.moon && !profileData.moon_sign) updates.moon_sign = signs.moon;
       if (signs.rising && !profileData.rising_sign) updates.rising_sign = signs.rising;
 
+      console.log('Updating profile with:', updates);
+
       if (Object.keys(updates).length > 0) {
         await updateMyProfile(updates);
         await loadProfile(); // Reload to show updated data
       }
+    } else {
+      console.log('No valid signs calculated');
     }
   }
 
