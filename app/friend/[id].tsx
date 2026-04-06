@@ -7,29 +7,71 @@ import {
   StyleSheet,
   Alert,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Friend, ZodiacSign } from '../../types';
-import { getFriendById, saveFriend, deleteFriend } from '../../lib/storage';
+import { getFriendProfileById, saveFriendProfile, deleteFriendProfile } from '../../lib/supabase-storage';
 import { SIGN_SYMBOLS, SIGN_ELEMENTS, getSignColor } from '../../lib/astrology';
+import { getCardDesign } from '../../lib/cardDesigns';
 import AddFriendModal from '../../components/AddFriendModal';
+import CardDesignSelector from '../../components/CardDesignSelector';
 
 export default function FriendDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [friend, setFriend] = useState<Friend | null>(null);
   const [editing, setEditing] = useState(false);
+  const [showCardPicker, setShowCardPicker] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      if (id) getFriendById(id).then(setFriend);
+      if (id) loadFriend(id);
     }, [id])
   );
 
+  async function loadFriend(friendId: string) {
+    const data = await getFriendProfileById(friendId);
+    if (data) {
+      setFriend({
+        id: data.id,
+        name: data.name,
+        birthDate: data.birth_date || '',
+        birthTime: data.birth_time || '',
+        birthLocation: data.birth_location || '',
+        sunSign: (data.sun_sign as ZodiacSign) || '',
+        moonSign: (data.moon_sign as ZodiacSign) || '',
+        risingSign: (data.rising_sign as ZodiacSign) || '',
+        notes: data.notes,
+        createdAt: new Date().toISOString(),
+        cardDesign: data.card_design,
+      });
+    }
+  }
+
   async function handleSave(updated: Friend) {
-    await saveFriend(updated);
-    setFriend(updated);
+    await saveFriendProfile({
+      id: updated.id,
+      name: updated.name,
+      birth_date: updated.birthDate,
+      birth_time: updated.birthTime,
+      birth_location: updated.birthLocation,
+      sun_sign: updated.sunSign,
+      moon_sign: updated.moonSign,
+      rising_sign: updated.risingSign,
+      notes: updated.notes,
+    });
+    if (id) await loadFriend(id);
     setEditing(false);
+  }
+
+  async function handleCardSelect(designId: string) {
+    if (!id) return;
+    await saveFriendProfile({ id, card_design: designId });
+    if (friend) {
+      setFriend({ ...friend, cardDesign: designId });
+    }
+    setShowCardPicker(false);
   }
 
   function handleDelete() {
@@ -42,7 +84,7 @@ export default function FriendDetail() {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
-            if (id) await deleteFriend(id);
+            if (id) await deleteFriendProfile(id);
             router.back();
           },
         },
@@ -59,10 +101,22 @@ export default function FriendDetail() {
   }
 
   const sunColor = getSignColor(friend.sunSign);
+  const cardDesign = getCardDesign(friend.cardDesign);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Card Design Preview */}
+        <TouchableOpacity
+          style={styles.cardPreview}
+          onPress={() => setShowCardPicker(true)}
+        >
+          <Image source={cardDesign.image} style={styles.cardImage} resizeMode="cover" />
+          <View style={styles.cardOverlay}>
+            <Text style={styles.cardOverlayText}>Tap to change card</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* Hero */}
         <View style={[styles.hero, { borderColor: sunColor + '60' }]}>
           <Text style={[styles.bigSymbol, { color: sunColor }]}>
@@ -112,6 +166,12 @@ export default function FriendDetail() {
         {/* Actions */}
         <View style={styles.actions}>
           <TouchableOpacity
+            style={styles.cardBtn}
+            onPress={() => setShowCardPicker(true)}
+          >
+            <Text style={styles.cardBtnText}>🎴 Change Card Design</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.editBtn}
             onPress={() => setEditing(true)}
           >
@@ -128,6 +188,13 @@ export default function FriendDetail() {
         existing={friend}
         onSave={handleSave}
         onClose={() => setEditing(false)}
+      />
+
+      <CardDesignSelector
+        visible={showCardPicker}
+        currentDesign={friend.cardDesign}
+        onSelect={handleCardSelect}
+        onClose={() => setShowCardPicker(false)}
       />
     </SafeAreaView>
   );
@@ -318,6 +385,46 @@ const styles = StyleSheet.create({
   actions: {
     gap: 10,
     marginTop: 8,
+  },
+  cardPreview: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+    position: 'relative',
+    height: 280,
+    borderWidth: 1,
+    borderColor: '#3a1f5e',
+  },
+  cardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  cardOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(14, 5, 32, 0.7)',
+    padding: 10,
+    alignItems: 'center',
+  },
+  cardOverlayText: {
+    color: '#9c7cbf',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardBtn: {
+    backgroundColor: '#1a0a2e',
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#3a1f5e',
+  },
+  cardBtnText: {
+    color: '#c8b0e8',
+    fontSize: 16,
+    fontWeight: '700',
   },
   editBtn: {
     backgroundColor: '#5c2fa8',

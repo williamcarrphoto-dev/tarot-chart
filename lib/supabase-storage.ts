@@ -84,7 +84,7 @@ export async function getFriendProfiles(): Promise<FriendProfile[]> {
   return data || [];
 }
 
-export async function saveFriendProfile(friend: Partial<FriendProfile>): Promise<{ error: any }> {
+export async function saveFriendProfile(friend: Partial<FriendProfile>): Promise<{ error: any; id?: string }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
@@ -99,16 +99,37 @@ export async function saveFriendProfile(friend: Partial<FriendProfile>): Promise
       .eq('id', id)
       .eq('user_id', user.id);
     if (error) console.error('❌ Friend update error:', error);
-    return { error };
+    return { error, id };
   } else {
-    // Insert new friend - let Supabase generate the id
-    const { error } = await supabase
+    // Insert new friend - let Supabase generate the id, return it
+    const { data, error } = await supabase
       .from('friend_profiles')
-      .insert({ ...friend, user_id: user.id });
+      .insert({ ...friend, user_id: user.id })
+      .select('id')
+      .single();
     if (error) console.error('❌ Friend insert error:', error);
-    else console.log('✅ Friend saved successfully');
-    return { error };
+    else console.log('✅ Friend saved successfully, id:', data?.id);
+    return { error, id: data?.id };
   }
+}
+
+export async function getFriendProfileById(id: string): Promise<FriendProfile | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('friend_profiles')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching friend profile:', error);
+    return null;
+  }
+
+  return data;
 }
 
 export async function deleteFriendProfile(id: string): Promise<{ error: any }> {

@@ -15,12 +15,15 @@ import FriendCard from '../../components/FriendCard';
 import AddFriendModal from '../../components/AddFriendModal';
 import VideoBackground from '../../components/VideoBackground';
 import AddByCodeModal from '../../components/AddByCodeModal';
+import CardDesignSelector from '../../components/CardDesignSelector';
 
 export default function FriendsTab() {
   const router = useRouter();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [codeModalVisible, setCodeModalVisible] = useState(false);
+  const [cardPickerVisible, setCardPickerVisible] = useState(false);
+  const [newFriendId, setNewFriendId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -65,7 +68,7 @@ export default function FriendsTab() {
   }
 
   async function handleSave(friend: Friend) {
-    await saveFriendProfile({
+    const { id } = await saveFriendProfile({
       name: friend.name,
       birth_date: friend.birthDate,
       birth_time: friend.birthTime,
@@ -76,6 +79,21 @@ export default function FriendsTab() {
     });
     await loadFriends();
     setModalVisible(false);
+    
+    // Show card picker for the new friend
+    if (id) {
+      setNewFriendId(id);
+      setCardPickerVisible(true);
+    }
+  }
+
+  async function handleCardSelect(designId: string) {
+    if (newFriendId) {
+      await saveFriendProfile({ id: newFriendId, card_design: designId });
+      await loadFriends();
+    }
+    setCardPickerVisible(false);
+    setNewFriendId(null);
   }
 
   async function handleAddByCode(code: string) {
@@ -149,6 +167,15 @@ export default function FriendsTab() {
         visible={codeModalVisible}
         onAdd={handleAddByCode}
         onClose={() => setCodeModalVisible(false)}
+      />
+
+      <CardDesignSelector
+        visible={cardPickerVisible}
+        onSelect={handleCardSelect}
+        onClose={() => {
+          setCardPickerVisible(false);
+          setNewFriendId(null);
+        }}
       />
     </SafeAreaView>
   );
