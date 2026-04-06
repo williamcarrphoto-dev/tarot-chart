@@ -163,11 +163,25 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
         </View>
       </View>
 
-      {/* Suggestions dropdown - inline or Modal based on prop */}
-      {useInlineDropdown ? (
-        // Inline dropdown for use inside other Modals
-        showSuggestions && suggestions.length > 0 && searchText.length >= 3 && (
-          <View style={styles.inlineSuggestionsContainer}>
+      {/* Inline dropdown - rendered outside normal flow */}
+      {useInlineDropdown && showSuggestions && suggestions.length > 0 && searchText.length >= 3 && (
+        <View style={styles.inlineOverlay}>
+          <TouchableOpacity 
+            style={styles.inlineBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowSuggestions(false)}
+          />
+          <View 
+            style={[
+              styles.inlineSuggestionsContainer,
+              {
+                position: 'absolute',
+                top: inputLayout.y + inputLayout.height + 8,
+                left: inputLayout.x,
+                width: inputLayout.width,
+              }
+            ]}
+          >
             <ScrollView 
               style={styles.suggestionsList}
               keyboardShouldPersistTaps="handled"
@@ -193,8 +207,11 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
-        )
-      ) : (
+        </View>
+      )}
+      
+      {/* Modal overlay for suggestions */}
+      {!useInlineDropdown && (
         // Modal overlay for suggestions
         <Modal
           visible={showSuggestions && suggestions.length > 0 && searchText.length >= 3}
@@ -289,12 +306,23 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 999,
   },
-  inlineSuggestionsContainer: {
+  inlineOverlay: {
     position: 'absolute',
-    top: '100%',
+    top: 0,
     left: 0,
     right: 0,
-    marginTop: 8,
+    bottom: 0,
+    zIndex: 9999,
+  },
+  inlineBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+  },
+  inlineSuggestionsContainer: {
     backgroundColor: '#0e0520',
     borderWidth: 2,
     borderColor: '#7c5cbf',
@@ -304,8 +332,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
-    elevation: 9999,
-    zIndex: 9999,
+    elevation: 10,
   },
   suggestionsList: {
     maxHeight: 240,
