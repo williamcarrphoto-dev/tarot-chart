@@ -227,7 +227,7 @@ export default function ProfileTab() {
         {/* Card Preview */}
         {!editing && profile && (
           <View style={styles.cardPreviewSection}>
-            <Text style={styles.sectionTitle}>Your Tarot Card</Text>
+            <Text style={styles.sectionTitle}>{profile.name || 'Your Name'}</Text>
             <View style={styles.cardPreviewContainer}>
               {profile.card_design ? (
                 <ImageBackground
@@ -238,18 +238,12 @@ export default function ProfileTab() {
                   <View style={styles.cardPreviewOverlay}>
                     <View style={[styles.cardPreviewAccent, { backgroundColor: getSignColor(profile.sun_sign as any) }]} />
                     <View style={styles.cardPreviewContent}>
-                      <Text style={styles.cardPreviewSymbol}>
-                        {profile.sun_sign && SIGN_SYMBOLS[profile.sun_sign as any] ? SIGN_SYMBOLS[profile.sun_sign as any] : '✦'}
-                      </Text>
                       <Text style={styles.cardPreviewName}>{profile.name || 'Your Name'}</Text>
                     </View>
                   </View>
                 </ImageBackground>
               ) : (
                 <View style={styles.cardPreviewPlaceholder}>
-                  <Text style={styles.cardPreviewSymbol}>
-                    {profile.sun_sign && SIGN_SYMBOLS[profile.sun_sign as any] ? SIGN_SYMBOLS[profile.sun_sign as any] : '✦'}
-                  </Text>
                   <Text style={styles.cardPreviewName}>{profile.name || 'Your Name'}</Text>
                   <Text style={styles.cardPreviewHint}>Choose a card design below</Text>
                 </View>
