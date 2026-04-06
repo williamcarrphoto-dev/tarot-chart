@@ -194,13 +194,13 @@ export default function AddFriendModal({
             </Field>
 
             <Field label="Birth Location">
-              <TextInput
-                style={styles.input}
+              <LocationSearch
                 value={birthLocation}
-                onChangeText={setBirthLocation}
-                placeholder="e.g. London, UK"
-                placeholderTextColor="#5c3d8f"
-                autoCapitalize="words"
+                onSelect={(location, coords) => {
+                  console.log('📍 Location selected:', location, coords);
+                  setBirthLocation(location);
+                }}
+                placeholder="Search for birth location..."
               />
             </Field>
 

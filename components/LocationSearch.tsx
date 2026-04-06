@@ -118,66 +118,78 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={searchText}
-          onChangeText={setSearchText}
-          placeholder={placeholder}
-          placeholderTextColor="#5c3d8f"
-          onFocus={() => {
-            if (suggestions.length > 0) {
-              setShowSuggestions(true);
-            }
-          }}
-        />
-        {loading && (
-          <View style={styles.loadingIndicator}>
-            <ActivityIndicator size="small" color="#7c5cbf" />
+    <>
+      <View style={styles.container}>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder={placeholder}
+            placeholderTextColor="#5c3d8f"
+            onFocus={() => {
+              if (suggestions.length > 0) {
+                setShowSuggestions(true);
+              }
+            }}
+          />
+          {loading && (
+            <View style={styles.loadingIndicator}>
+              <ActivityIndicator size="small" color="#7c5cbf" />
+            </View>
+          )}
+        </View>
+
+        {showSuggestions && suggestions.length > 0 && (
+          <View style={styles.suggestionsContainer}>
+            <ScrollView 
+              style={styles.suggestionsList}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
+              {suggestions.map((result, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestionItem}
+                  onPress={() => handleSelect(result)}
+                >
+                  <Text style={styles.suggestionText}>{result.display_name}</Text>
+                  <Text style={styles.suggestionCoords}>
+                    {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowSuggestions(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
 
+      {/* Backdrop overlay */}
       {showSuggestions && suggestions.length > 0 && (
-        <View style={styles.suggestionsContainer}>
-          <ScrollView 
-            style={styles.suggestionsList}
-            nestedScrollEnabled
-            keyboardShouldPersistTaps="handled"
-          >
-            {suggestions.map((result, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.suggestionItem}
-                onPress={() => handleSelect(result)}
-              >
-                <Text style={styles.suggestionText}>{result.display_name}</Text>
-                <Text style={styles.suggestionCoords}>
-                  {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setShowSuggestions(false)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={() => setShowSuggestions(false)}
+        />
       )}
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    zIndex: 1000,
+    zIndex: 9999,
   },
   inputContainer: {
     position: 'relative',
+    zIndex: 10000,
   },
   input: {
     backgroundColor: '#1e0d38',
@@ -199,45 +211,57 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#1e0d38',
-    borderWidth: 1,
-    borderColor: '#3a1f5e',
-    borderRadius: 10,
-    marginTop: 4,
+    backgroundColor: '#0e0520',
+    borderWidth: 2,
+    borderColor: '#7c5cbf',
+    borderRadius: 12,
+    marginTop: 8,
     maxHeight: 250,
-    zIndex: 1001,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    zIndex: 10001,
+    shadowColor: '#7c5cbf',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 10,
   },
   suggestionsList: {
     maxHeight: 200,
   },
   suggestionItem: {
-    padding: 12,
+    padding: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#2a1248',
+    backgroundColor: '#1a0d30',
   },
   suggestionText: {
     color: '#ede0ff',
     fontSize: 14,
     marginBottom: 4,
+    fontWeight: '500',
   },
   suggestionCoords: {
-    color: '#7c5cbf',
+    color: '#9c7cbf',
     fontSize: 11,
   },
   closeButton: {
-    padding: 10,
+    padding: 12,
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#3a1f5e',
+    backgroundColor: '#0e0520',
   },
   closeButtonText: {
     color: '#7c5cbf',
     fontSize: 13,
     fontWeight: '600',
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(14, 5, 32, 0.85)',
+    zIndex: 9998,
   },
 });
