@@ -141,30 +141,46 @@ export default function ProfileTab() {
     // Only update if we got valid results
     if (signs.moon || signs.rising) {
       const updates: Partial<Profile> = {};
-      if (signs.sun && !profileData.sun_sign) updates.sun_sign = signs.sun;
-      if (signs.moon && !profileData.moon_sign) updates.moon_sign = signs.moon;
-      if (signs.rising && !profileData.rising_sign) updates.rising_sign = signs.rising;
+      // Always update signs when recalculating (not just when missing)
+      if (signs.sun) updates.sun_sign = signs.sun;
+      if (signs.moon) updates.moon_sign = signs.moon;
+      if (signs.rising) updates.rising_sign = signs.rising;
 
       console.log('Updating profile with:', updates);
 
       if (Object.keys(updates).length > 0) {
+        setSaving(true);
         await updateMyProfile(updates);
-        await loadProfile(); // Reload to show updated data
+        
+        // Update local state immediately
+        if (profile) {
+          setProfile({
+            ...profile,
+            ...updates
+          });
+        }
+        
+        setSaving(false);
         
         // Show success message to user
         const updatedSigns = [];
+        if (updates.sun_sign) updatedSigns.push('Sun');
         if (updates.moon_sign) updatedSigns.push('Moon');
         if (updates.rising_sign) updatedSigns.push('Rising');
-        if (updatedSigns.length > 0) {
-          Alert.alert(
-            '✨ Signs Calculated',
-            `Your ${updatedSigns.join(' and ')} sign${updatedSigns.length > 1 ? 's have' : ' has'} been automatically calculated!`,
-            [{ text: 'OK' }]
-          );
-        }
+        
+        Alert.alert(
+          '✨ Signs Recalculated',
+          `Updated: ${updatedSigns.join(', ')}`,
+          [{ text: 'OK' }]
+        );
       }
     } else {
       console.log('❌ No valid signs calculated - check birth data');
+      Alert.alert(
+        '⚠️ Calculation Failed',
+        'Unable to calculate signs. Please check your birth data.',
+        [{ text: 'OK' }]
+      );
     }
   }
 
