@@ -24,10 +24,10 @@ function calculateMoonPosition(date: Date): number {
 
 // Calculate ascendant (rising sign) using accurate astronomy library
 function calculateAscendant(date: Date, lat: number, lng: number): number {
-  // Calculate Local Sidereal Time (RAMC - Right Ascension of Midheaven)
-  const gst = Astronomy.SiderealTime(date); // in hours
+  // Calculate Local Sidereal Time
+  const gst = Astronomy.SiderealTime(date); // Greenwich Sidereal Time in hours
   const lst = (gst + (lng / 15.0)) % 24; // Local Sidereal Time in hours
-  const ramc = lst * 15; // Convert to degrees (RAMC)
+  const lstDegrees = lst * 15; // Convert to degrees
   
   // Get obliquity of ecliptic
   const astroTime = Astronomy.MakeTime(date);
@@ -35,19 +35,20 @@ function calculateAscendant(date: Date, lat: number, lng: number): number {
   const obliquity = 23.439291 - 0.0130042 * T;
   
   // Convert to radians
-  const ramcRad = ramc * Math.PI / 180;
+  const lstRad = lstDegrees * Math.PI / 180;
   const latRad = lat * Math.PI / 180;
   const oblRad = obliquity * Math.PI / 180;
   
-  // Calculate ascendant using standard astrological formula
-  // This is the correct formula used by professional astrology software
-  const x = Math.cos(ramcRad);
-  const y = -Math.sin(ramcRad) * Math.cos(oblRad) - Math.tan(latRad) * Math.sin(oblRad);
+  // Calculate ascendant using the correct formula
+  // tan(ASC) = cos(LST) / (-sin(LST) * cos(obliquity) - tan(lat) * sin(obliquity))
+  const y = Math.cos(lstRad);
+  const x = -Math.sin(lstRad) * Math.cos(oblRad) - Math.tan(latRad) * Math.sin(oblRad);
   
   let asc = Math.atan2(y, x) * 180 / Math.PI;
   
   // Normalize to 0-360
-  if (asc < 0) asc += 360;
+  while (asc < 0) asc += 360;
+  while (asc >= 360) asc -= 360;
   
   return asc;
 }
