@@ -72,6 +72,11 @@ export default function ProfileTab() {
     setLoading(true);
     const data = await getMyProfile();
     if (data) {
+      console.log('📋 Profile loaded:', {
+        name: data.name,
+        card_design: data.card_design,
+        hasCardDesign: !!data.card_design
+      });
       setProfile(data);
       setFormData({
         name: data.name || '',
