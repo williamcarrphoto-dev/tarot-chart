@@ -381,8 +381,6 @@ const styles = StyleSheet.create({
   },
   field: {
     marginBottom: 14,
-    overflow: 'visible',
-    zIndex: 1,
   },
   label: {
     color: '#9c7cbf',

@@ -27,7 +27,7 @@ interface Props {
   value: string;
   onSelect: (location: string, coords: { lat: number; lng: number }) => void;
   placeholder?: string;
-  useInlineDropdown?: boolean; // Use inline dropdown instead of Modal (for use inside other Modals)
+  useInlineDropdown?: boolean;
 }
 
 export default function LocationSearch({ value, onSelect, placeholder = 'Search location...', useInlineDropdown = false }: Props) {
@@ -36,7 +36,7 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputLayout, setInputLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const debounceTimer = useRef<NodeJS.Timeout>();
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<any>(null);
 
   useEffect(() => {
@@ -44,7 +44,6 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
   }, [value]);
 
   useEffect(() => {
-    // Debounce search
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
@@ -55,7 +54,7 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
       return;
     }
 
-    setShowSuggestions(true); // Show modal when user starts typing
+    setShowSuggestions(true);
     debounceTimer.current = setTimeout(() => {
       searchLocation(searchText);
     }, 500);
@@ -72,10 +71,7 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
 
     setLoading(true);
     try {
-      // Using Photon API which is CORS-friendly
-      // Prioritize hospitals and cities
       const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10`;
-      
       const response = await fetch(url);
       const data = await response.json();
 
@@ -97,9 +93,7 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
           return 0;
         });
         
-        // Limit to 5 results
         results = results.slice(0, 5);
-        
         setSuggestions(results);
         setShowSuggestions(true);
       } else {
@@ -135,13 +129,60 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
     });
   }
 
+  const showDropdown = showSuggestions && suggestions.length > 0 && searchText.length >= 3;
+
+  // Inline mode: render suggestions as normal flow content (no overlay tricks)
+  if (useInlineDropdown) {
+    return (
+      <View>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder={placeholder}
+            placeholderTextColor="#5c3d8f"
+          />
+          {loading && (
+            <View style={styles.loadingIndicator}>
+              <ActivityIndicator size="small" color="#7c5cbf" />
+            </View>
+          )}
+        </View>
+
+        {showDropdown && (
+          <View style={styles.inlineSuggestions}>
+            {suggestions.map((result, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.suggestionItem}
+                onPress={() => handleSelect(result)}
+              >
+                <Text style={styles.suggestionText}>{result.display_name}</Text>
+                <Text style={styles.suggestionCoords}>
+                  {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowSuggestions(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // Modal mode: for profile edit (outside other modals)
   return (
     <>
       <View 
         style={styles.container}
         ref={inputRef}
-        onLayout={(event) => {
-          const layout = event.nativeEvent.layout;
+        onLayout={() => {
           inputRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
             setInputLayout({ x, y, width, height });
           });
@@ -163,17 +204,20 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
         </View>
       </View>
 
-      {/* Inline dropdown - rendered outside normal flow */}
-      {useInlineDropdown && showSuggestions && suggestions.length > 0 && searchText.length >= 3 && (
-        <View style={styles.inlineOverlay}>
-          <TouchableOpacity 
-            style={styles.inlineBackdrop}
-            activeOpacity={1}
-            onPress={() => setShowSuggestions(false)}
-          />
+      <Modal
+        visible={showDropdown}
+        transparent={true}
+        animationType="none"
+        onRequestClose={() => setShowSuggestions(false)}
+      >
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setShowSuggestions(false)}
+        >
           <View 
             style={[
-              styles.inlineSuggestionsContainer,
+              styles.modalSuggestions,
               {
                 position: 'absolute',
                 top: inputLayout.y + inputLayout.height + 8,
@@ -181,11 +225,11 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
                 width: inputLayout.width,
               }
             ]}
+            onStartShouldSetResponder={() => true}
           >
             <ScrollView 
               style={styles.suggestionsList}
               keyboardShouldPersistTaps="handled"
-              nestedScrollEnabled
             >
               {suggestions.map((result, index) => (
                 <TouchableOpacity
@@ -207,62 +251,8 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      )}
-      
-      {/* Modal overlay for suggestions */}
-      {!useInlineDropdown && (
-        // Modal overlay for suggestions
-        <Modal
-          visible={showSuggestions && suggestions.length > 0 && searchText.length >= 3}
-          transparent={true}
-          animationType="none"
-          onRequestClose={() => setShowSuggestions(false)}
-        >
-          <TouchableOpacity
-            style={styles.overlay}
-            activeOpacity={1}
-            onPress={() => setShowSuggestions(false)}
-          >
-            <View 
-              style={[
-                styles.suggestionsContainer,
-                {
-                  position: 'absolute',
-                  top: inputLayout.y + inputLayout.height + 8,
-                  left: inputLayout.x,
-                  width: inputLayout.width,
-                }
-              ]}
-              onStartShouldSetResponder={() => true}
-            >
-              <ScrollView 
-                style={styles.suggestionsList}
-                keyboardShouldPersistTaps="handled"
-              >
-                {suggestions.map((result, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.suggestionItem}
-                    onPress={() => handleSelect(result)}
-                  >
-                    <Text style={styles.suggestionText}>{result.display_name}</Text>
-                    <Text style={styles.suggestionCoords}>
-                      {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowSuggestions(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Modal>
-      )}
+        </TouchableOpacity>
+      </Modal>
     </>
   );
 }
@@ -270,7 +260,6 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
-    zIndex: 9999,
   },
   inputContainer: {
     position: 'relative',
@@ -294,7 +283,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  suggestionsContainer: {
+  modalSuggestions: {
     backgroundColor: '#0e0520',
     borderWidth: 2,
     borderColor: '#7c5cbf',
@@ -306,33 +295,13 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 999,
   },
-  inlineOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 9999,
-  },
-  inlineBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-  },
-  inlineSuggestionsContainer: {
+  inlineSuggestions: {
+    marginTop: 8,
     backgroundColor: '#0e0520',
     borderWidth: 2,
     borderColor: '#7c5cbf',
     borderRadius: 12,
-    maxHeight: 250,
-    shadowColor: '#7c5cbf',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 10,
+    overflow: 'hidden',
   },
   suggestionsList: {
     maxHeight: 240,
