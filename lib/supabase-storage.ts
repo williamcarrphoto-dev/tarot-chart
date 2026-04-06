@@ -51,10 +51,17 @@ export async function updateMyProfile(updates: Partial<Profile>): Promise<{ erro
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
+  console.log('📝 Updating profile with:', updates);
+  console.log('User ID:', user.id);
+
   const { error } = await supabase
     .from('profiles')
     .update(updates)
     .eq('id', user.id);
+
+  if (error) {
+    console.error('Supabase update error:', error);
+  }
 
   return { error };
 }

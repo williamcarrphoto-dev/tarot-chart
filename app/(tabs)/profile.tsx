@@ -169,8 +169,16 @@ export default function ProfileTab() {
   }
 
   async function handleCardDesignSelect(designId: string) {
+    console.log('🎨 Selecting card design:', designId);
     setSaving(true);
-    await updateMyProfile({ card_design: designId });
+    const { error } = await updateMyProfile({ card_design: designId });
+    console.log('Card design update result:', { error });
+    if (error) {
+      console.error('❌ Error updating card design:', error);
+      Alert.alert('Error', 'Failed to update card design. Please try again.');
+    } else {
+      console.log('✓ Card design updated successfully');
+    }
     await loadProfile();
     setSaving(false);
   }
@@ -267,7 +275,7 @@ export default function ProfileTab() {
 
         {/* Profile Card */}
         <View style={styles.profileCard}>
-          {editing ? (
+          {editing && profile ? (
             <ProfileEditForm
               profile={profile}
               onSave={async (data) => {
