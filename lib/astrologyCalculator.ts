@@ -94,13 +94,11 @@ export async function calculateAstrologicalSigns(birthData: BirthData): Promise<
 
     console.log('📍 Using coordinates:', { lat: coords.lat, lng: coords.lng, timezone: coords.timezone });
     
-    // Create local date first, then convert to UTC
-    const localDate = new Date(year, month - 1, day, hour, minute, 0);
+    // Create UTC date by treating local time as UTC, then subtracting timezone offset
+    // For 1996-04-11 11:30 in UTC+10, we want UTC time of 1996-04-11 01:30
+    const utcDate = new Date(Date.UTC(year, month - 1, day, hour - coords.timezone, minute, 0));
     
-    // Convert to UTC by subtracting timezone offset (in milliseconds)
-    const utcDate = new Date(localDate.getTime() - (coords.timezone * 60 * 60 * 1000));
-    
-    console.log('🕐 Local time:', localDate.toLocaleString());
+    console.log('🕐 Local time:', `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
     console.log('📅 UTC Date:', utcDate.toISOString());
 
     // Calculate Sun sign (use existing function)
