@@ -69,20 +69,33 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
 
     setLoading(true);
     try {
-      // Using Nominatim with CORS proxy workaround
-      // We'll use photon API which is CORS-friendly
-      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`;
+      // Using Photon API which is CORS-friendly
+      // Prioritize hospitals and cities
+      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=10`;
       
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.features && data.features.length > 0) {
-        const results: LocationResult[] = data.features.map((feature: any) => ({
+        let results: LocationResult[] = data.features.map((feature: any) => ({
           display_name: formatDisplayName(feature.properties),
           lat: feature.geometry.coordinates[1].toString(),
           lon: feature.geometry.coordinates[0].toString(),
           address: feature.properties,
+          type: feature.properties.type || feature.properties.osm_value,
         }));
+        
+        // Prioritize hospitals, then cities/suburbs, then other locations
+        results.sort((a: any, b: any) => {
+          const aIsHospital = a.type === 'hospital' || a.display_name.toLowerCase().includes('hospital');
+          const bIsHospital = b.type === 'hospital' || b.display_name.toLowerCase().includes('hospital');
+          if (aIsHospital && !bIsHospital) return -1;
+          if (!aIsHospital && bIsHospital) return 1;
+          return 0;
+        });
+        
+        // Limit to 5 results
+        results = results.slice(0, 5);
         
         setSuggestions(results);
         setShowSuggestions(true);
@@ -136,47 +149,35 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
         )}
       </View>
 
-      {/* Modal for suggestions dropdown */}
-      <Modal
-        visible={showSuggestions && suggestions.length > 0 && searchText.length >= 3}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowSuggestions(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setShowSuggestions(false)}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.suggestionsContainer}>
-              <ScrollView 
-                style={styles.suggestionsList}
-                keyboardShouldPersistTaps="handled"
-              >
-                {suggestions.map((result, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.suggestionItem}
-                    onPress={() => handleSelect(result)}
-                  >
-                    <Text style={styles.suggestionText}>{result.display_name}</Text>
-                    <Text style={styles.suggestionCoords}>
-                      {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+      {/* Inline suggestions dropdown */}
+      {showSuggestions && suggestions.length > 0 && searchText.length >= 3 && (
+        <View style={styles.suggestionsContainer}>
+          <ScrollView 
+            style={styles.suggestionsList}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+          >
+            {suggestions.map((result, index) => (
               <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowSuggestions(false)}
+                key={index}
+                style={styles.suggestionItem}
+                onPress={() => handleSelect(result)}
               >
-                <Text style={styles.closeButtonText}>Close</Text>
+                <Text style={styles.suggestionText}>{result.display_name}</Text>
+                <Text style={styles.suggestionCoords}>
+                  {parseFloat(result.lat).toFixed(4)}, {parseFloat(result.lon).toFixed(4)}
+                </Text>
               </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+            ))}
+          </ScrollView>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowSuggestions(false)}
+          >
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -184,9 +185,11 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+    zIndex: 1000,
   },
   inputContainer: {
     position: 'relative',
+    zIndex: 1001,
   },
   input: {
     backgroundColor: '#1e0d38',
@@ -203,31 +206,26 @@ const styles = StyleSheet.create({
     right: 14,
     top: 12,
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(14, 5, 32, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    width: '100%',
-    maxWidth: 600,
-  },
   suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: 8,
     backgroundColor: '#0e0520',
     borderWidth: 2,
     borderColor: '#7c5cbf',
     borderRadius: 12,
-    maxHeight: 400,
+    maxHeight: 300,
     shadowColor: '#7c5cbf',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
-    elevation: 10,
+    elevation: 999,
+    zIndex: 1002,
   },
   suggestionsList: {
-    maxHeight: 320,
+    maxHeight: 240,
   },
   suggestionItem: {
     padding: 14,
