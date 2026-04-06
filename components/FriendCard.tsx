@@ -23,7 +23,7 @@ interface Props {
 
 export default function FriendCard({ friend, onPress, cardDesign }: Props) {
   const sunColor = getSignColor(friend.sunSign);
-  const design = getCardDesign(cardDesign);
+  const design = getCardDesign(cardDesign); // Will always return a design (default if none selected)
 
   return (
     <TouchableOpacity
@@ -31,50 +31,12 @@ export default function FriendCard({ friend, onPress, cardDesign }: Props) {
       onPress={onPress}
       activeOpacity={0.8}
     >
-      {design ? (
-        <ImageBackground
-          source={design.image}
-          style={styles.cardBackground}
-          imageStyle={styles.cardBackgroundImage}
-        >
-          <View style={styles.cardOverlay}>
-            <View style={[styles.topAccent, { backgroundColor: sunColor }]} />
-
-      <View style={styles.symbolRow}>
-        {friend.sunSign ? (
-          <Text style={[styles.bigSymbol, { color: sunColor }]}>
-            {SIGN_SYMBOLS[friend.sunSign]}
-          </Text>
-        ) : (
-          <Text style={styles.bigSymbol}>✦</Text>
-        )}
-      </View>
-
-      <Text style={styles.name} numberOfLines={1}>
-        {friend.name}
-      </Text>
-
-      <View style={styles.signsRow}>
-        {friend.sunSign ? (
-          <SignBadge label="☀" value={friend.sunSign} color={sunColor} />
-        ) : null}
-        {friend.moonSign ? (
-          <SignBadge label="☽" value={friend.moonSign} color="#7c9cbf" />
-        ) : null}
-        {friend.risingSign ? (
-          <SignBadge label="↑" value={friend.risingSign} color="#9c7cbf" />
-        ) : null}
-      </View>
-
-      {friend.birthDate ? (
-        <Text style={styles.birthDate}>
-          {formatDate(friend.birthDate)}
-        </Text>
-      ) : null}
-          </View>
-        </ImageBackground>
-      ) : (
-        <View style={styles.cardBackground}>
+      <ImageBackground
+        source={design.image}
+        style={styles.cardBackground}
+        imageStyle={styles.cardBackgroundImage}
+      >
+        <View style={styles.cardOverlay}>
           <View style={[styles.topAccent, { backgroundColor: sunColor }]} />
 
       <View style={styles.symbolRow}>
@@ -109,7 +71,7 @@ export default function FriendCard({ friend, onPress, cardDesign }: Props) {
         </Text>
       ) : null}
         </View>
-      )}
+      </ImageBackground>
     </TouchableOpacity>
   );
 }
