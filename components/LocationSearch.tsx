@@ -253,6 +253,7 @@ export default function LocationSearch({ value, onSelect, placeholder = 'Search 
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+    zIndex: 9999,
   },
   inputContainer: {
     position: 'relative',
@@ -303,8 +304,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
-    elevation: 1000,
-    zIndex: 1000,
+    elevation: 9999,
+    zIndex: 9999,
   },
   suggestionsList: {
     maxHeight: 240,
